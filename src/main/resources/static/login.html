@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng nhập | AttendSys</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <div class="login-page">
+    <div class="card login-card">
+      <div class="login-logo">
+        <div class="logo-icon">⏱️</div>
+        <h1>AttendSys</h1>
+        <p>Hệ thống quản lý chấm công alsd</p>
+      </div>
+
+      <div id="alert" style="display:none"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="username">Tên đăng nhập</label>alsd
+          <input id="username" class="form-control" type="text" placeholder="Nhập username..." required autofocus />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Mật khẩu</label>
+          <input id="password" class="form-control" type="password" placeholder="Nhập mật khẩu..." required />
+        </div>
+        <button type="submit" class="btn btn-primary login-btn" id="loginBtn">
+          🔐 Đăng nhập
+        </button>
+      </form>
+    </div>
+  </div>ll
+
+  <script src="js/api.js"></script>
+  <script>
+    redirectIfLoggedIn();
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      // Đổi tên biến thành alertEl để tránh trùng với window.alert()
+      const alertEl = document.getElementById('alert');
+      alertEl.style.display = 'none';
+      alertEl.className = '';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      btn.textContent = '⏳ Đang đăng nhập...';
+      btn.disabled = true;
+
+      try {
+        // Gọi API đăng nhập: POST /api/auth/login
+        const data = await apiPost('/auth/login', { username, password });
+
+        // Lưu thông tin xác thực vào localStorage
+        setToken(data.token);
+        setRole(data.role);
+        setUsername(username);
+
+        // Hiển thị thông báo rồi chuyển hướng
+        alertEl.className = 'alert alert-success';
+        alertEl.textContent = '✅ Đăng nhập thành công! Đang chuyển hướng...';
+        alertEl.style.display = 'block';
+
+        setTimeout(() => { window.location.href = '/dashboard.html'; }, 800);
+
+      } catch (err) {
+        // Chỉ hiển thị lỗi khi thực sự thất bại
+        alertEl.className = 'alert alert-danger';
+        alertEl.textContent = '❌ ' + (err.message || 'Tên đăng nhập hoặc mật khẩu không đúng');
+        alertEl.style.display = 'block';
+
+        btn.textContent = '🔐 Đăng nhập';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+
+</html>

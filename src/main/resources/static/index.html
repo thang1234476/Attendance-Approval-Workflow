@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>AttendSys</title>
+    <script src="js/api.js"></script>
+    <script>
+        if (isLoggedIn()) { window.location.href = '/dashboard.html'; }
+        else { window.location.href = '/login.html'; }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>AttendSys</h1>
+        <p>Hệ thống điểm danh</p>
+        <a href="/login.html">Đăng nhập</a>
+        <a href="/register.html">Đăng ký</a>
+    </div>
+</body>
+
+</html>

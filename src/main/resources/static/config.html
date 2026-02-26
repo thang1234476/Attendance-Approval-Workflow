@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cấu Hình | AttendSys</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <main class="main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">⚙️ Cấu Hình Hệ Thống</h1>
+                    <p class="page-subtitle">Chỉ ADMIN có thể thay đổi cấu hình</p>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                <div class="card">
+                    <p class="card-title">📋 Danh Sách Cấu Hình</p>
+                    <div id="configList" style="display:flex;flex-direction:column;gap:12px">
+                        <div style="color:var(--text-muted);text-align:center">Đang tải...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <p class="card-title">✏️ Cập Nhật Cấu Hình</p>
+                    <div class="form-group">
+                        <label class="form-label">Key (Khóa cấu hình)</label>
+                        <input type="text" id="cfgKey" class="form-control" placeholder="Ví dụ: WORK_START_TIME" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Value (Giá trị)</label>
+                        <input type="text" id="cfgValue" class="form-control" placeholder="Ví dụ: 08:00" />
+                    </div>
+                    <button class="btn btn-primary" style="width:100%" onclick="saveConfig()">💾 Lưu Cấu Hình</button>
+
+                    <div style="margin-top:24px">
+                        <p class="card-title" style="margin-bottom:10px">📖 Hướng Dẫn</p>
+                        <div
+                            style="font-size:0.82rem;color:var(--text-muted);display:flex;flex-direction:column;gap:8px">
+                            <div class="card" style="padding:12px;background:var(--bg)">
+                                <code style="color:var(--primary)">WORK_START_TIME</code><br>
+                                Giờ bắt đầu làm việc. Format: <code>HH:mm</code><br>
+                                Ví dụ: <code>09:00</code>
+                            </div>
+                            <div class="card" style="padding:12px;background:var(--bg)">
+                                <code style="color:var(--primary)">GRACE_PERIOD_MINS</code><br>
+                                Số phút cho phép trễ. Format: số nguyên.<br>
+                                Ví dụ: <code>15</code>
+                            </div>
+                            <div class="card" style="padding:12px;background:var(--bg)">
+                                <code style="color:var(--primary)">TELEGRAM_BOT_TOKEN</code><br>
+                                Token bot Telegram để gửi thông báo.<br>
+                                Ví dụ: <code>123456:ABCdef...</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script>
+        requireAdmin();
+        document.getElementById('sidebar-container').innerHTML = renderSidebar('config');
+
+        async function loadConfigs() {
+            try {
+                const list = await apiGet('/admin/config');
+                const container = document.getElementById('configList');
+                if (!list || list.length === 0) {
+                    container.innerHTML = '<div style="color:var(--text-muted)">Chưa có cấu hình nào</div>';
+                    return;
+                }
+                container.innerHTML = list.map(c => `
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    padding:12px 14px;border-radius:8px;background:var(--bg);
+                    border:1px solid var(--border);cursor:pointer"
+             onclick="fillForm('${c.configKey}', '${c.configValue}')">
+          <div>
+            <div style="font-size:0.82rem;color:var(--text-muted)">Key</div>
+            <code style="color:var(--primary);font-size:0.9rem">${c.configKey}</code>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.82rem;color:var(--text-muted)">Value</div>
+            <strong>${c.configValue}</strong>
+          </div>
+        </div>`).join('');
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        function fillForm(key, value) {
+            document.getElementById('cfgKey').value = key;
+            document.getElementById('cfgValue').value = value;
+        }
+
+        async function saveConfig() {
+            const key = document.getElementById('cfgKey').value.trim().toUpperCase();
+            const value = document.getElementById('cfgValue').value.trim();
+            if (!key || !value) { showToast('Vui lòng nhập đầy đủ Key và Value', 'error'); return; }
+            try {
+                await apiPut('/admin/config', { key, value });
+                showToast('Cập nhật cấu hình thành công!', 'success');
+                loadConfigs();
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        loadConfigs();
+    </script>
+</body>
+
+</html>

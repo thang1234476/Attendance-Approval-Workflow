@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nhân Viên | AttendSys</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <main class="main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">👥 Quản Lý Nhân Viên</h1>
+                    <p class="page-subtitle">Thêm, sửa, xóa nhân viên trong hệ thống</p>
+                </div>
+                <button class="btn btn-primary" onclick="openAddModal()">➕ Thêm Nhân Viên</button>
+            </div>
+
+            <div class="card">
+                <p class="card-title">Danh Sách Nhân Viên</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Telegram ID</th>
+                                <th>Vai Trò</th>
+                                <th>Trạng Thái</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userBody">
+                            <tr>
+                                <td colspan="7" style="text-align:center;color:var(--text-muted)">Đang tải...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Thêm/Sửa User -->
+    <div class="modal-overlay" id="userModal">
+        <div class="modal">
+            <div class="modal-header">
+                <p class="modal-title" id="modalTitle">➕ Thêm Nhân Viên</p>
+                <button class="modal-close" onclick="closeUserModal()">✕</button>
+            </div>
+            <form id="userForm">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-group">
+                        <label class="form-label">Username *</label>
+                        <input type="text" id="fUsername" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mật Khẩu *</label>
+                        <input type="password" id="fPassword" class="form-control"
+                            placeholder="Để trống nếu không đổi" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" id="fEmail" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Telegram ID</label>
+                        <input type="text" id="fTelegramId" class="form-control" placeholder="@username" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Vai Trò *</label>
+                        <select id="fRole" class="form-control">
+                            <option value="EMPLOYEE">EMPLOYEE</option>
+                            <option value="MANAGER">MANAGER</option>
+                            <option value="ADMIN">ADMIN</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Trạng Thái</label>
+                        <select id="fStatus" class="form-control">
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeUserModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="saveUser()">💾 Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script>
+        requireAdmin();
+        document.getElementById('sidebar-container').innerHTML = renderSidebar('users');
+
+        let editingId = null;
+
+        async function loadUsers() {
+            try {
+                const list = await apiGet('/admin/users');
+                const tbody = document.getElementById('userBody');
+                if (!list || list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Chưa có nhân viên nào</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = list.map((u, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${u.username}</strong></td>
+          <td>${u.email}</td>
+          <td>${u.telegramId || '—'}</td>
+          <td>
+            <span class="badge ${u.role === 'ADMIN' ? 'badge-blue' : u.role === 'MANAGER' ? 'badge-amber' : 'badge-gray'}">
+              ${u.role}
+            </span>
+          </td>
+          <td>
+            <span class="badge ${u.status === 'ACTIVE' ? 'badge-green' : 'badge-red'}">
+              ${u.status}
+            </span>
+          </td>
+          <td style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick='openEditModal(${JSON.stringify(u)})'>✏️ Sửa</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${u.username}')">🗑️ Xóa</button>
+          </td>
+        </tr>`).join('');
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        function openAddModal() {
+            editingId = null;
+            document.getElementById('modalTitle').textContent = '➕ Thêm Nhân Viên';
+            document.getElementById('fUsername').disabled = false;
+            ['fUsername', 'fEmail', 'fTelegramId'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('fPassword').value = '';
+            document.getElementById('fRole').value = 'EMPLOYEE';
+            document.getElementById('fStatus').value = 'ACTIVE';
+            document.getElementById('userModal').classList.add('open');
+        }
+
+        function openEditModal(u) {
+            editingId = u.id;
+            document.getElementById('modalTitle').textContent = '✏️ Sửa Nhân Viên';
+            document.getElementById('fUsername').value = u.username;
+            document.getElementById('fUsername').disabled = true;
+            document.getElementById('fEmail').value = u.email;
+            document.getElementById('fTelegramId').value = u.telegramId || '';
+            document.getElementById('fRole').value = u.role;
+            document.getElementById('fStatus').value = u.status;
+            document.getElementById('fPassword').value = '';
+            document.getElementById('userModal').classList.add('open');
+        }
+
+        function closeUserModal() { document.getElementById('userModal').classList.remove('open'); }
+
+        async function saveUser() {
+            const username = document.getElementById('fUsername').value.trim();
+            const password = document.getElementById('fPassword').value;
+            const email = document.getElementById('fEmail').value.trim();
+            const telegramId = document.getElementById('fTelegramId').value.trim() || null;
+            const role = document.getElementById('fRole').value;
+            const status = document.getElementById('fStatus').value;
+            try {
+                if (editingId) {
+                    await apiPut(`/admin/users/${editingId}`, { email, telegramId, role, status });
+                    showToast('Cập nhật thành công!', 'success');
+                } else {
+                    if (!password) { showToast('Vui lòng nhập mật khẩu', 'error'); return; }
+                    await apiPost('/admin/users', { username, password, email, telegramId, role });
+                    showToast('Thêm nhân viên thành công!', 'success');
+                }
+                closeUserModal();
+                loadUsers();
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        async function deleteUser(id, username) {
+            if (!confirm(`Xóa nhân viên "${username}"? Hành động này không thể hoàn tác!`)) return;
+            try {
+                await apiDelete(`/admin/users/${id}`);
+                showToast('Đã xóa nhân viên!', 'info');
+                loadUsers();
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        loadUsers();
+    </script>
+</body>
+
+</html>

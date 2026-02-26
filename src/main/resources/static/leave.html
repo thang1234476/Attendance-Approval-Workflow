@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nghỉ Phép | AttendSys</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <div class="layout">
+        <div id="sidebar-container"></div>
+        <main class="main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">📅 Nghỉ Phép</h1>
+                    <p class="page-subtitle">Quản lý đơn xin nghỉ phép</p>
+                </div>
+                <button class="btn btn-primary" onclick="openCreateModal()">➕ Tạo Đơn Mới</button>
+            </div>
+
+            <div class="card">
+                <p class="card-title">📋 Danh Sách Đơn Nghỉ Phép</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nhân Viên</th>
+                                <th>Từ Ngày</th>
+                                <th>Đến Ngày</th>
+                                <th>Lý Do</th>
+                                <th>Trạng Thái</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaveBody">
+                            <tr>
+                                <td colspan="7" style="text-align:center;color:var(--text-muted)">Đang tải...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Tạo đơn nghỉ phép -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <p class="modal-title">📅 Tạo Đơn Nghỉ Phép</p>
+                <button class="modal-close" onclick="closeCreateModal()">✕</button>
+            </div>
+            <form id="createForm">
+                <div class="form-group">
+                    <label class="form-label">Từ Ngày</label>
+                    <input type="date" id="startDate" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đến Ngày</label>
+                    <input type="date" id="endDate" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lý Do</label>
+                    <textarea id="reason" class="form-control" rows="3"
+                        placeholder="Nhập lý do nghỉ phép..."></textarea>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeCreateModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="submitLeave()">Gửi Đơn</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Từ chối đơn -->
+    <div class="modal-overlay" id="rejectModal">
+        <div class="modal">
+            <div class="modal-header">
+                <p class="modal-title">❌ Từ Chối Đơn</p>
+                <button class="modal-close" onclick="closeRejectModal()">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Lý Do Từ Chối</label>
+                <textarea id="rejectReason" class="form-control" rows="3"
+                    placeholder="Nhập lý do từ chối..."></textarea>
+            </div>
+            <input type="hidden" id="rejectId" />
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeRejectModal()">Hủy</button>
+                <button class="btn btn-danger" onclick="confirmReject()">Xác Nhận Từ Chối</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = renderSidebar('leave');
+        const today = todayISO();
+        document.getElementById('startDate').value = today;
+        document.getElementById('endDate').value = today;
+
+        const role = getRole();
+        const canApprove = role === 'ADMIN' || role === 'MANAGER';
+
+        async function loadLeave() {
+            try {
+                const endpoint = canApprove ? '/leave/all' : '/leave/my';
+                const list = await apiGet(endpoint);
+                const tbody = document.getElementById('leaveBody');
+                if (!list || list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Chưa có đơn nào</td></tr>';
+                    return;
+                }
+                const statusMap = {
+                    PENDING: '<span class="badge badge-amber">⏳ Chờ Duyệt</span>',
+                    APPROVED: '<span class="badge badge-green">✅ Đã Duyệt</span>',
+                    REJECTED: '<span class="badge badge-red">❌ Từ Chối</span>',
+                };
+                tbody.innerHTML = list.map((l, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${l.user?.username || '—'}</td>
+          <td>${formatDate(l.startDate)}</td>
+          <td>${formatDate(l.endDate)}</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${l.reason || ''}">${l.reason || '—'}</td>
+          <td>${statusMap[l.status] || l.status}</td>
+          <td>
+            ${canApprove && l.status === 'PENDING' ? `
+              <button class="btn btn-success btn-sm" onclick="approveLeave(${l.id})">✅ Duyệt</button>
+              <button class="btn btn-danger btn-sm" onclick="openRejectModal(${l.id})">❌ Từ Chối</button>
+            ` : '—'}
+          </td>
+        </tr>`).join('');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function openCreateModal() { document.getElementById('createModal').classList.add('open'); }
+        function closeCreateModal() { document.getElementById('createModal').classList.remove('open'); }
+
+        function openRejectModal(id) {
+            document.getElementById('rejectId').value = id;
+            document.getElementById('rejectReason').value = '';
+            document.getElementById('rejectModal').classList.add('open');
+        }
+        function closeRejectModal() { document.getElementById('rejectModal').classList.remove('open'); }
+
+        async function submitLeave() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const reason = document.getElementById('reason').value;
+            if (!startDate || !endDate) { showToast('Vui lòng chọn ngày', 'error'); return; }
+            try {
+                await apiPost('/leave', { startDate, endDate, reason });
+                showToast('Gửi đơn thành công!', 'success');
+                closeCreateModal();
+                loadLeave();
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        async function approveLeave(id) {
+            try {
+                await apiPut(`/leave/${id}/status`, { approved: true });
+                showToast('Đã duyệt đơn!', 'success');
+                loadLeave();
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        async function confirmReject() {
+            const id = document.getElementById('rejectId').value;
+            const rejectReason = document.getElementById('rejectReason').value;
+            try {
+                await apiPut(`/leave/${id}/status`, { approved: false, rejectReason });
+                showToast('Đã từ chối đơn!', 'info');
+                closeRejectModal();
+                loadLeave();
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        loadLeave();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,75 @@
+# ===================================
+# Spring Boot / Maven - .gitignore
+# ===================================
+
+# --- Build output ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# --- Maven wrapper ---
+.mvn/wrapper/maven-wrapper.properties
+
+# --- IDE: IntelliJ IDEA ---
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# --- IDE: Eclipse ---
+.project
+.classpath
+.settings/
+bin/
+
+# --- IDE: VS Code ---
+.vscode/
+*.code-workspace
+
+# --- IDE: NetBeans ---
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# --- Logs ---
+*.log
+logs/
+spring.log
+
+# --- OS generated files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V7
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# --- Environment / Secrets ---
+# QUAN TRỌNG: Không commit file application.properties gốc
+# vì chứa thông tin nhạy cảm (DB password, JWT secret)
+src/main/resources/application.properties
+src/main/resources/application-dev.properties
+src/main/resources/application-prod.properties
+
+# Chỉ giữ lại file example (template)
+# application.properties.example      <--- đây là file được phép commit
+
+# --- Java compiled files ---
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# --- Package files ---
+*.zip
+*.tar.gz
+*.rar
+
+# --- JVM crash logs ---
+hs_err_pid*
+replay_pid*
