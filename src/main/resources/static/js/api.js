@@ -34,7 +34,7 @@ async function api(method, path, body = null) {
     if (res.status === 401) { clearAuth(); window.location.href = '/login.html'; return; }
 
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Lỗi không xác định');
+    if (!res.ok) throw new Error(data.error || data.message || 'Lỗi không xác định');
     return data;
 }
 
