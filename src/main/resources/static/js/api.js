@@ -69,6 +69,9 @@ function renderSidebar(activePage) {
         <a href="users.html" class="nav-item ${activePage === 'users' ? 'active' : ''}">
             <span class="icon">👥</span><span class="label">Nhân Viên</span>
         </a>
+        <a href="scanqr.html" class="nav-item ${activePage === 'scanqr' ? 'active' : ''}">
+            <span class="icon">🫆</span><span class="label">Quét mã điểm danh</span>
+        </a>
         <a href="config.html" class="nav-item ${activePage === 'config' ? 'active' : ''}">
             <span class="icon">⚙️</span><span class="label">Cấu Hình</span>
         </a>`;

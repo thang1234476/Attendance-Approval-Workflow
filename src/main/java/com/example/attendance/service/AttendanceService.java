@@ -22,9 +22,9 @@ public class AttendanceService {
     private final UserRepository userRepository;
     private final SystemConfigService configService;
 
-    public Attendance checkIn(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    public Attendance checkIn(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User ID " + userId + " không tồn tại"));
 
         // Kiểm tra xem nhân viên đã điểm danh hôm nay chưa
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();

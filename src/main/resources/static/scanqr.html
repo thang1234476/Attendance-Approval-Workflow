@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quét mã điểm danh | AttendSys</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="main-content">
+            <div class="back-home-wrapper">
+                <button class="btn-home" onclick="window.location.href='dashboard.html'" title="Về trang chủ">
+                    📊
+                </button>
+            </div>
+            <div class="header" style="text-align: center; margin: 20px;">
+                <h1>Quét mã điểm danh</h1>
+                <p>Vui lòng quét mã QR để điểm danh</p>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="qr-container">
+                        <div id="qrcode">
+                            <script src="https://unpkg.com/html5-qrcode"></script>
+                            <div class="card">
+                                <h2 class="card-title">📷 Quét Mã Nhân Viên</h2>
+                                <div id="qr-reader" style="width: 100%; max-width: 500px; margin: auto;"></div>
+                                <div id="qr-reader-results" style="margin-top: 20px; font-weight: bold; color: green;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script src="js/api.js"></script>
+            <script>
+                // Khi trang đã load xong
+
+                let isScanning = false;
+                function onScanSuccess(decodedText, decodedResult) {
+                    // decodedText: Nội dung mã QR (ID nhân viên)
+                    if (isScanning) return;
+                    isScanning = true;
+
+                    document.getElementById('qr-reader-results').innerText = "ID: " + decodedText;
+
+                    // Tự động gọi API điểm danh mà bạn đã có
+                    apiPost('/attendance/check-in/qr', { employeeId: decodedText })
+                        .then(res => {
+                            showToast("✅ Điểm danh thành công: " + decodedText, "success");
+                            // Dừng camera nếu muốn hoặc để tiếp tục quét người tiếp theo
+                            const statusMap = { 'ON_TIME': '✅ Đúng giờ', 'LATE': '⚠️ Muộn' };
+                            const msg = `Điểm danh thành công! Trạng thái: <strong>${statusMap[res.status] || res.status}</strong>`;
+                            setTimeout(() => { isScanning = false; }, 3000);
+                        })
+                        .catch(err => {
+                            showToast("❌ Lỗi: " + err.message, "error");
+
+                            setTimeout(() => { isScanning = false; }, 2000);
+                        });
+                }
+
+                // Cấu hình trình quét
+                let html5QrcodeScanner = new Html5QrcodeScanner(
+                    "qr-reader",
+                    {
+                        fps: 10,       // Số khung hình trên giây
+                        qrbox: 250,    // Kích thước vùng quét (hình vuông)
+                        aspectRatio: 1.0
+                    }
+                );
+
+                // Bắt đầu chạy
+                html5QrcodeScanner.render(onScanSuccess);
+            </script>
+        </div>
+    </div>
+</body>
+
+</html>

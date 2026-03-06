@@ -27,6 +27,7 @@
                         <thead>
                             <tr>
                                 <th>#</th>
+                                <th>ID Nhân viên</th>
                                 <th>Username</th>
                                 <th>Email</th>
                                 <th>Telegram ID</th>
@@ -37,7 +38,7 @@
                         </thead>
                         <tbody id="userBody">
                             <tr>
-                                <td colspan="7" style="text-align:center;color:var(--text-muted)">Đang tải...</td>
+                                <td colspan="8" style="text-align:center;color:var(--text-muted)">Đang tải...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -55,6 +56,10 @@
             </div>
             <form id="userForm">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-group">
+                        <label class="form-label">ID nhân viên *</label>
+                        <input type="text" id="fIduser" class="form-control" required />
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Username *</label>
                         <input type="text" id="fUsername" class="form-control" required />
@@ -109,12 +114,13 @@
                 const list = await apiGet('/admin/users');
                 const tbody = document.getElementById('userBody');
                 if (!list || list.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Chưa có nhân viên nào</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Chưa có nhân viên nào</td></tr>';
                     return;
                 }
                 tbody.innerHTML = list.map((u, i) => `
         <tr>
           <td>${i + 1}</td>
+          <td style = "text-align: center;">${u.id}</td>
           <td><strong>${u.username}</strong></td>
           <td>${u.email}</td>
           <td>${u.telegramId || '—'}</td>
