@@ -50,7 +50,7 @@ public class LeaveRequestService {
     public LeaveRequest approveRequest(Long id, String managerUsername, boolean isApproved, String rejectReason) {
         LeaveRequest request = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Leave request not found"));
-        
+
         User manager = userRepository.findByUsername(managerUsername)
                 .orElseThrow();
 
@@ -62,7 +62,7 @@ public class LeaveRequestService {
             request.setRejectReason(rejectReason);
         }
         request.setApprovedBy(manager);
-        
+
         return repository.save(request);
     }
 }

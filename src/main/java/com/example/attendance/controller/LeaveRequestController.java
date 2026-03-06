@@ -42,8 +42,7 @@ public class LeaveRequestController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<LeaveRequest> updateStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> payload
-    ) {
+            @RequestBody Map<String, Object> payload) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean approved = (boolean) payload.get("approved");
         String reason = (String) payload.get("rejectReason");

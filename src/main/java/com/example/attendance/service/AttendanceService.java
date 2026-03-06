@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class AttendanceService {
         // Kiểm tra xem nhân viên đã điểm danh hôm nay chưa
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
-        
+
         if (repository.findByUserIdAndCheckInTimeBetween(user.getId(), startOfDay, endOfDay).isPresent()) {
             throw new IllegalStateException("User already checked in today");
         }
@@ -36,7 +37,7 @@ public class AttendanceService {
         LocalDateTime now = LocalDateTime.now();
         String workStartTimeStr = configService.getConfigValue("WORK_START_TIME");
         String gracePeriodStr = configService.getConfigValue("GRACE_PERIOD_MINS");
-        
+
         // Giá trị mặc định nếu không tìm thấy cấu hình
         LocalTime workStartTime = workStartTimeStr != null ? LocalTime.parse(workStartTimeStr) : LocalTime.of(9, 0);
         int gracePeriod = gracePeriodStr != null ? Integer.parseInt(gracePeriodStr) : 15;
@@ -54,7 +55,11 @@ public class AttendanceService {
                 .checkInTime(now)
                 .status(status)
                 .build();
-        
+
         return repository.save(attendance);
+    }
+
+    public List<Attendance> getAllUsers() {
+        return repository.findAll();
     }
 }

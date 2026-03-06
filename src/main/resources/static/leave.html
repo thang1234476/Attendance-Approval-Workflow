@@ -108,10 +108,10 @@
         const canApprove = role === 'ADMIN' || role === 'MANAGER';
 
         async function loadLeave() {
+            const tbody = document.getElementById('leaveBody');
             try {
                 const endpoint = canApprove ? '/leave/all' : '/leave/my';
                 const list = await apiGet(endpoint);
-                const tbody = document.getElementById('leaveBody');
                 if (!list || list.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Chưa có đơn nào</td></tr>';
                     return;
@@ -137,7 +137,9 @@
           </td>
         </tr>`).join('');
             } catch (err) {
+                console.error(err);
                 showToast(err.message, 'error');
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:red">Lỗi: ${err.message}</td></tr>`;
             }
         }
 

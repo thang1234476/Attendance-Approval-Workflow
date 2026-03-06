@@ -97,7 +97,7 @@
             try {
                 // Admins/Managers can see all; others need dedicated endpoint (if added)
                 // For now, fetch all — backend will protect accordingly
-                const list = await apiGet('/admin/attendance/today').catch(() => []);
+                const list = await apiGet('/attendance').catch(() => []);
                 const tbody = document.getElementById('attendanceBody');
                 if (!list || list.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Chưa có dữ liệu</td></tr>';

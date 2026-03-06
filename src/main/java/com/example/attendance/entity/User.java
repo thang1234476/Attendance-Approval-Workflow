@@ -21,6 +21,15 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({
+        "hibernateLazyInitializer",
+        "handler",
+        "authorities",
+        "accountNonExpired",
+        "accountNonLocked",
+        "credentialsNonExpired",
+        "enabled"
+})
 // Implement UserDetails để dùng trực tiếp làm Spring Security Principal
 public class User implements UserDetails {
 
