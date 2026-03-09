@@ -1,5 +1,6 @@
 package com.example.attendance.service;
 
+import com.example.attendance.dto.AttendanceSummary;
 import com.example.attendance.entity.Attendance;
 import com.example.attendance.entity.AttendanceStatus;
 import com.example.attendance.entity.User;
@@ -61,5 +62,37 @@ public class AttendanceService {
 
     public List<Attendance> getAllUsers() {
         return repository.findAll();
+    }
+
+    public List<Attendance> getAttendanceBetween(LocalDateTime start, LocalDateTime end) {
+        return repository.findAllByCheckInTimeBetween(start, end);
+    }
+
+    public List<Attendance> getMyAttendanceBetween(Long userId, LocalDateTime start, LocalDateTime end) {
+        return repository.findByUserIdAndCheckInTimeBetween(userId, start, end)
+                .map(List::of)
+                .orElse(List.of());
+    }
+
+    public AttendanceSummary getDailySummary(String dateStr) {
+        LocalDate date = LocalDate.parse(dateStr);
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+
+        Long totalEmployees = userRepository.count();
+        Long ontime = repository.countByStatusAndCheckInTimeBetween(AttendanceStatus.ON_TIME, startOfDay, endOfDay);
+        Long late = repository.countByStatusAndCheckInTimeBetween(AttendanceStatus.LATE, startOfDay, endOfDay);
+
+        long notCheckedIn = totalEmployees - ontime - late;
+
+        if (notCheckedIn < 0)
+            notCheckedIn = 0;
+
+        return AttendanceSummary.builder()
+                .totalEmployees(totalEmployees)
+                .onTimeCount(ontime)
+                .lateCount(late)
+                .notCheckedIn(notCheckedIn)
+                .build();
     }
 }

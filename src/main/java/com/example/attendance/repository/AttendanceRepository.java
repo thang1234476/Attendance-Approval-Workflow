@@ -14,22 +14,23 @@ import java.util.Optional;
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
-    @Query("SELECT a FROM Attendance a WHERE a.user.id = :userId AND a.checkInTime BETWEEN :start AND :end")
-    Optional<Attendance> findByUserIdAndCheckInTimeBetween(
-            @Param("userId") Long userId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end);
+        @Query("SELECT a FROM Attendance a WHERE a.user.id = :userId AND a.checkInTime BETWEEN :start AND :end")
+        Optional<Attendance> findByUserIdAndCheckInTimeBetween(
+                        @Param("userId") Long userId,
+                        @Param("start") LocalDateTime start,
+                        @Param("end") LocalDateTime end);
 
-    // Lỗi fix: dùng tham số enum thay vì chuỗi string để so sánh trong JPQL
-    @Query("SELECT COUNT(a) FROM Attendance a WHERE a.status = :status AND a.checkInTime BETWEEN :start AND :end")
-    long countByStatusAndCheckInTimeBetween(
-            @Param("status") AttendanceStatus status,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end);
+        // Lỗi fix: dùng tham số enum thay vì chuỗi string để so sánh trong JPQL
+        @Query("SELECT COUNT(a) FROM Attendance a WHERE a.status = :status AND a.checkInTime BETWEEN :start AND :end")
+        long countByStatusAndCheckInTimeBetween(
+                        @Param("status") AttendanceStatus status,
+                        @Param("start") LocalDateTime start,
+                        @Param("end") LocalDateTime end);
 
-    @Query("SELECT COUNT(a) FROM Attendance a WHERE a.checkInTime BETWEEN :start AND :end")
-    long countTodayCheckIns(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+        @Query("SELECT COUNT(a) FROM Attendance a WHERE a.checkInTime BETWEEN :start AND :end")
+        long countTodayCheckIns(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT a FROM Attendance a WHERE a.checkInTime BETWEEN :start AND :end ORDER BY a.checkInTime DESC")
-    List<Attendance> findAllByCheckInTimeBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+        @Query("SELECT a FROM Attendance a WHERE a.checkInTime BETWEEN :start AND :end ORDER BY a.checkInTime DESC")
+        List<Attendance> findAllByCheckInTimeBetween(@Param("start") LocalDateTime start,
+                        @Param("end") LocalDateTime end);
 }
