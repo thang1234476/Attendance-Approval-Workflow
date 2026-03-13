@@ -30,6 +30,14 @@ public class LeaveRequestController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return ResponseEntity.ok(service.getMyRequests(auth.getName()));
     }
+@GetMapping
+@PreAuthorize("isAuthenticated()")
+public ResponseEntity<List<LeaveRequest>> getLeaves(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String date) {
+    // Gọi hàm searchRequests mới tạo ở Bước 1
+    return ResponseEntity.ok(service.searchRequests(name, date)); 
+}
 
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")

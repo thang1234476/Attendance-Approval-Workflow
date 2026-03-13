@@ -43,13 +43,6 @@ public class AttendanceController {
                 .build());
     }
 
-    // @PostMapping("/check-in")
-    // public ResponseEntity<Attendance> checkIn() {
-    // Authentication authentication =
-    // SecurityContextHolder.getContext().getAuthentication();
-    // String username = authentication.getName();
-    // return ResponseEntity.ok(service.checkIn(username));
-    // }
 
     @PostMapping("/check-in/qr")
     public ResponseEntity<Attendance> checkInQr(@RequestBody Map<String, String> body) {
