@@ -110,6 +110,7 @@
   
 </script> 
     <script>
+      
     requireAuth();
     document.getElementById('sidebar-container').innerHTML = renderSidebar('leave');
     
@@ -177,7 +178,6 @@
             'APPROVED': '<span class="badge badge-green">✅ Đã Duyệt</span>',
             'REJECTED': '<span class="badge badge-red">❌ Từ Chối</span>'
         };
-
         tbody.innerHTML = list.map((l, i) => {
             const startDate = formatDisplayDate(l.startDate);
             const endDate = formatDisplayDate(l.endDate);
@@ -191,15 +191,23 @@
                     <td>${l.reason || '—'}</td>
                     <td>${statusMap[l.status] || l.status}</td>
                     <td>
-                        ${canApprove && l.status === 'PENDING' ? 
-                            `<button class="btn btn-success btn-sm" onclick="approveLeave(${l.id})">Duyệt</button>` : 
-                            '—'
-                        }
+                        ${canApprove && l.status === 'PENDING' ? `
+              <button class="btn btn-success btn-sm" onclick="approveLeave(${l.id}, '${l.user?.username}')">✅ Duyệt</button>
+              <button class="btn btn-danger btn-sm" onclick="openRejectModal(${l.id}, '${l.user?.username}')">❌ Từ Chối</button>
+            ` : '—'}
                     </td>
                 </tr>
             `;
         }).join('');
     }
+      
+           let currentRejectName = '';
+        function openRejectModal(id, userName) {
+            document.getElementById('rejectId').value = id;
+            document.getElementById('rejectReason').value = '';
+            currentRejectName = userName;
+            document.getElementById('rejectModal').classList.add('open'); 
+        }
 
     // Hàm lọc theo ngày
     async function applyFilter() {
@@ -250,6 +258,22 @@
     document.getElementById('searchName').addEventListener('input', searchByName);
     document.getElementById('leaveDate').addEventListener('change', applyFilter);
 
+
+        async function approveLeave(id, employeeName) {
+    try {
+        // Đợi cập nhật DB xong mới làm bước tiếp theo
+        await apiPut(`/leave/${id}/status`, { approved: true });
+        
+        // Gửi sang n8n (không cần dùng await nếu bạn muốn nó chạy ngầm nhanh hơn)
+        sendApprovedToN8n(id, employeeName);
+        
+        showToast('Đã duyệt đơn!', 'success');
+        await loadLeaveData(); // Sửa tên hàm ở đây
+    } catch (err) { 
+        showToast(err.message, 'error'); 
+    }
+}
+      
     // Khởi tạo trang
     loadLeaveData();
 
@@ -260,12 +284,6 @@
     
     function closeCreateModal() { 
         document.getElementById('createModal').classList.remove('open'); 
-    }
-
-    function openRejectModal(id) {
-        document.getElementById('rejectId').value = id;
-        document.getElementById('rejectReason').value = '';
-        document.getElementById('rejectModal').classList.add('open');
     }
     
     function closeRejectModal() { 
@@ -292,30 +310,71 @@
         }
     }
 
-    async function approveLeave(id) {
-        try {
-            await apiPut(`/leave/${id}/status`, { approved: true });
-            showToast('Đã duyệt đơn!', 'success');
-            loadLeaveData(); // Load lại dữ liệu
-        } catch (err) { 
-            showToast(err.message, 'error'); 
-        }
+
+        async function confirmReject() {
+    const id = document.getElementById('rejectId').value;
+    const rejectReason = document.getElementById('rejectReason').value;
+    
+    if (!rejectReason.trim()) {
+        showToast('Vui lòng nhập lý do từ chối', 'error');
+        return;
     }
 
-    async function confirmReject() {
-        const id = document.getElementById('rejectId').value;
-        const rejectReason = document.getElementById('rejectReason').value;
+    try {
+        await apiPut(`/leave/${id}/status`, { approved: false, rejectReason });
         
-        try {
-            await apiPut(`/leave/${id}/status`, { approved: false, rejectReason });
-            showToast('Đã từ chối đơn!', 'info');
-            closeRejectModal();
-            loadLeaveData(); // Load lại dữ liệu
-        } catch (err) { 
-            showToast(err.message, 'error'); 
-        }
+        // Gửi sang n8n sau khi DB đã cập nhật
+        sendRejectToN8n(id, currentRejectName, rejectReason);
+        
+        showToast('Đã từ chối đơn!', 'info');
+        closeRejectModal();
+        await loadLeaveData(); // Sửa tên hàm ở đây
+    } catch (err) { 
+        showToast(err.message, 'error'); 
     }
-</script>
+}
+
+        async function sendApprovedToN8n(requestId, employeeName) {
+            const webhookUrl = 'https://thawnn8n.app.n8n.cloud/webhook-test/accept-leave';
+            try {
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: requestId,
+                        name: employeeName || "Nhân viên", // Tránh lỗi nếu không có tên
+                        status: 'APPROVED',
+                        created_at: new Date().toISOString()
+                    }),
+                });
+                console.log("Đã bắn tín hiệu sang n8n");
+            } catch (error) {
+                console.error("Lỗi gửi n8n:", error);
+            }
+        }
+
+        async function sendRejectToN8n(requestId, employeeName, rejectReason) {
+            const webhookUrl = 'https://thawnn8n.app.n8n.cloud/webhook-test/accept-leave';
+            try {
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: requestId,
+                        name: employeeName || "Nhân viên", // Tránh lỗi nếu không có tên
+                        status: 'REJECTED',
+                        rejectReason: rejectReason,
+                        created_at: new Date().toISOString()
+                    }),
+                });
+                console.log("Đã bắn tín hiệu sang n8n");
+            } catch (error) {
+                console.error("Lỗi gửi n8n:", error);
+            }
+        }
+
+        loadLeaveData();
+    </script>
 </body>
 
 </html>

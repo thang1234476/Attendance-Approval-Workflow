@@ -15,4 +15,5 @@ public class LeaveRequestDto {
     private LocalDate startDate;
     private LocalDate endDate;
     private String reason;
+    private String telegramId;
 }

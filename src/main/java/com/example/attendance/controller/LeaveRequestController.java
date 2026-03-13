@@ -22,8 +22,7 @@ public class LeaveRequestController {
 
     @PostMapping
     public ResponseEntity<LeaveRequest> createRequest(@RequestBody LeaveRequestDto dto) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return ResponseEntity.ok(service.createLeaveRequest(auth.getName(), dto));
+        return ResponseEntity.ok(service.createLeaveRequest(dto));
     }
 
     @GetMapping("/my")
