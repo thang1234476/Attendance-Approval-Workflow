@@ -131,8 +131,8 @@
           <td>${statusMap[l.status] || l.status}</td>
           <td>
             ${canApprove && l.status === 'PENDING' ? `
-              <button class="btn btn-success btn-sm" onclick="approveLeave(${l.id})">✅ Duyệt</button>
-              <button class="btn btn-danger btn-sm" onclick="openRejectModal(${l.id})">❌ Từ Chối</button>
+              <button class="btn btn-success btn-sm" onclick="approveLeave(${l.id}, '${l.user?.username}')">✅ Duyệt</button>
+              <button class="btn btn-danger btn-sm" onclick="openRejectModal(${l.id}, '${l.user?.username}')">❌ Từ Chối</button>
             ` : '—'}
           </td>
         </tr>`).join('');
@@ -146,9 +146,11 @@
         function openCreateModal() { document.getElementById('createModal').classList.add('open'); }
         function closeCreateModal() { document.getElementById('createModal').classList.remove('open'); }
 
-        function openRejectModal(id) {
+        let currentRejectName = '';
+        function openRejectModal(id, userName) {
             document.getElementById('rejectId').value = id;
             document.getElementById('rejectReason').value = '';
+            currentRejectName = userName;
             document.getElementById('rejectModal').classList.add('open');
         }
         function closeRejectModal() { document.getElementById('rejectModal').classList.remove('open'); }
@@ -166,9 +168,10 @@
             } catch (err) { showToast(err.message, 'error'); }
         }
 
-        async function approveLeave(id) {
+        async function approveLeave(id, employeeName) {
             try {
                 await apiPut(`/leave/${id}/status`, { approved: true });
+                await sendApprovedToN8n(id, employeeName);
                 showToast('Đã duyệt đơn!', 'success');
                 loadLeave();
             } catch (err) { showToast(err.message, 'error'); }
@@ -177,12 +180,52 @@
         async function confirmReject() {
             const id = document.getElementById('rejectId').value;
             const rejectReason = document.getElementById('rejectReason').value;
+            await sendRejectToN8n(id, currentRejectName, rejectReason);
             try {
                 await apiPut(`/leave/${id}/status`, { approved: false, rejectReason });
                 showToast('Đã từ chối đơn!', 'info');
                 closeRejectModal();
                 loadLeave();
             } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        async function sendApprovedToN8n(requestId, employeeName) {
+            const webhookUrl = 'https://thawnn8n.app.n8n.cloud/webhook-test/accept-leave';
+            try {
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: requestId,
+                        name: employeeName || "Nhân viên", // Tránh lỗi nếu không có tên
+                        status: 'APPROVED',
+                        created_at: new Date().toISOString()
+                    }),
+                });
+                console.log("Đã bắn tín hiệu sang n8n");
+            } catch (error) {
+                console.error("Lỗi gửi n8n:", error);
+            }
+        }
+
+        async function sendRejectToN8n(requestId, employeeName, rejectReason) {
+            const webhookUrl = 'https://thawnn8n.app.n8n.cloud/webhook-test/accept-leave';
+            try {
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: requestId,
+                        name: employeeName || "Nhân viên", // Tránh lỗi nếu không có tên
+                        status: 'REJECTED',
+                        rejectReason: rejectReason,
+                        created_at: new Date().toISOString()
+                    }),
+                });
+                console.log("Đã bắn tín hiệu sang n8n");
+            } catch (error) {
+                console.error("Lỗi gửi n8n:", error);
+            }
         }
 
         loadLeave();

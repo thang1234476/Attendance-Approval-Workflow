@@ -19,10 +19,13 @@ public class LeaveRequestService {
     private final LeaveRequestRepository repository;
     private final UserRepository userRepository;
 
-    public LeaveRequest createLeaveRequest(String username, LeaveRequestDto dto) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    public LeaveRequest createLeaveRequest(LeaveRequestDto dto) {
+        User user = userRepository.findByTelegramId(dto.getTelegramId())
+                .orElseThrow(
+                        () -> new RuntimeException("Không tìm thấy nhân viên với Telegram ID: " + dto.getTelegramId()));
 
+        String employeeName = user.getUsername();
+        System.out.println("Đang xử lý đơn nghỉ phép cho: " + employeeName);
         // Tạo yêu cầu nghỉ phép mới với trạng thái PENDING
         LeaveRequest leaveRequest = LeaveRequest.builder()
                 .user(user)
