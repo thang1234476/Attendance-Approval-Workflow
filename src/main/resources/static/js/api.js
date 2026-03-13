@@ -20,6 +20,23 @@ function requireAuth() { if (!isLoggedIn()) { window.location.href = '/login.htm
 function requireAdmin() { requireAuth(); if (!isAdmin()) { window.location.href = '/dashboard.html'; } }
 function redirectIfLoggedIn() { if (isLoggedIn()) { window.location.href = '/dashboard.html'; } }
 
+// // === HTTP client ===
+// async function api(method, path, body = null) {
+//     const headers = { 'Content-Type': 'application/json' };
+//     const token = getToken();
+//     if (token) headers['Authorization'] = `Bearer ${token}`;
+
+//     const opts = { method, headers };
+//     if (body) opts.body = JSON.stringify(body);
+
+//     const res = await fetch(API_BASE + path, opts);
+
+//     if (res.status === 401) { clearAuth(); window.location.href = '/login.html'; return; }
+
+//     const data = await res.json().catch(() => ({}));
+//     if (!res.ok) throw new Error(data.error || data.message || 'Lỗi không xác định');
+//     return data;
+// }
 // === HTTP client ===
 async function api(method, path, body = null) {
     const headers = { 'Content-Type': 'application/json' };
@@ -31,10 +48,28 @@ async function api(method, path, body = null) {
 
     const res = await fetch(API_BASE + path, opts);
 
-    if (res.status === 401) { clearAuth(); window.location.href = '/login.html'; return; }
+    if (res.status === 401) { 
+        clearAuth(); 
+        window.location.href = '/login.html'; 
+        return; 
+    }
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || data.message || 'Lỗi không xác định');
+    // SỬA: Xử lý response đúng cách
+    let data;
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
+    } else {
+        data = { error: await res.text() };
+    }
+    
+    if (!res.ok) {
+        // SỬA: Hiển thị lỗi chi tiết hơn
+        const errorMsg = data.error || data.message || `HTTP ${res.status}: ${res.statusText}`;
+        console.error('API Error:', errorMsg);
+        throw new Error(errorMsg);
+    }
+    
     return data;
 }
 
@@ -116,3 +151,4 @@ function formatDate(d) {
     return new Date(d).toLocaleDateString('vi-VN');
 }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
+

@@ -19,32 +19,42 @@
                 </div>
                 <button class="btn btn-primary" onclick="openCreateModal()">➕ Tạo Đơn Mới</button>
             </div>
-
-            <div class="card">
-                <p class="card-title">📋 Danh Sách Đơn Nghỉ Phép</p>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Nhân Viên</th>
-                                <th>Từ Ngày</th>
-                                <th>Đến Ngày</th>
-                                <th>Lý Do</th>
-                                <th>Trạng Thái</th>
-                                <th>Hành Động</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaveBody">
-                            <tr>
-                                <td colspan="7" style="text-align:center;color:var(--text-muted)">Đang tải...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="search-box">
+              <div class="search-icon">🔍</div>
+              <input type="text" id="searchName" class="search-input" 
+                 placeholder="Tìm theo tên nhân viên..."
+               oninput="applyFilters()">
             </div>
-        </main>
+    <div class="card">
+    <div class="filter-box" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        <label for="leaveDate" style="font-weight: 500;">📅 Lọc theo ngày:</label>
+        <input type="date" id="leaveDate" class="form-control" style="width: 200px;">
+        <button id="clearFilterBtn" class="btn btn-outline" style="padding: 8px 15px;" onclick="clearFilter()">✕ Xóa lọc</button>
+        <span id="displayDate" style="margin-left: 10px; font-weight: bold; color: #4361ee;"></span>
     </div>
+    
+    <p class="card-title">📋 Danh Sách Đơn Nghỉ Phép</p>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nhân Viên</th>
+                    <th>Từ Ngày</th>
+                    <th>Đến Ngày</th>   
+                    <th>Lý Do</th>
+                    <th>Trạng Thái</th>
+                    <th>Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="leaveTableBody">
+                <tr>
+                    <td colspan="7" style="text-align:center;color:var(--text-muted)">Đang tải...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
     <!-- Modal: Tạo đơn nghỉ phép -->
     <div class="modal-overlay" id="createModal">
@@ -97,96 +107,445 @@
 
     <div id="toast-container" class="toast-container"></div>
     <script src="js/api.js"></script>
+  
+    requireAuth();
+    document.getElementById('sidebar-container').innerHTML = renderSidebar('leave');
+    
+    // Lấy ngày hiện tại theo định dạng YYYY-MM-DD cho input date
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayFormatted = `${year}-${month}-${day}`;
+    
+    document.getElementById('startDate').value = todayFormatted;
+    document.getElementById('endDate').value = todayFormatted;
+    document.getElementById('leaveDate').value = todayFormatted;
+
+    const role = getRole();
+    const canApprove = role === 'ADMIN' || role === 'MANAGER';
+
+    // Hàm chuyển đổi định dạng ngày từ MM/DD/YYYY sang YYYY-MM-DD
+    function convertDateFormat(dateStr) {
+        if (!dateStr) return null;
+        // Nếu đã là YYYY-MM-DD thì giữ nguyên
+        if (dateStr.includes('-')) return dateStr;
+        
+        // Chuyển từ MM/DD/YYYY sang YYYY-MM-DD
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+            return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+        }
+        return dateStr;
+    }
+
+    // Hàm format ngày hiển thị
+    function formatDisplayDate(dateStr) {
+        if (!dateStr) return '—';
+        // Nếu là YYYY-MM-DD, chuyển sang DD/MM/YYYY
+        if (dateStr.includes('-')) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+        return dateStr;
+    }
+
+    async function loadLeaveRequests() {
+        const tbody = document.getElementById('requestBody');
+        try {
+            const endpoint = canApprove ? '/leave/all' : '/leave/my';
+            const list = await apiGet(endpoint);
+            renderRequestTable(tbody, list);
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="7" style="color:red">Lỗi: ${err.message}</td></tr>`;
+        }
+    }
+// Sửa hàm applyFilters
+async function applyFilters() {
+    const name = document.getElementById('searchName').value.trim();
+    const date = document.getElementById('leaveDate').value; // Format: YYYY-MM-DD
+    const historyTbody = document.getElementById('historyBody');
+    
+    historyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Đang tải...</td></tr>';
+
+    try {
+        // Chuyển date về format đúng (đã là YYYY-MM-DD từ input date)
+        
+        let params = new URLSearchParams();
+        if (name) params.append('name', name);
+        if (date) params.append('date', date);
+        
+        const queryString = params.toString();
+        const url = queryString ? `/leave?${queryString}` : '/leave';
+        
+        console.log('Calling API:', url);
+        console.log('Date sent:', date);
+        
+        const list = await apiGet(url);
+        console.log('Received data:', list);
+        
+        if (!list || list.length === 0) {
+            historyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Không có ai nghỉ trong ngày này</td></tr>';
+            return;
+        }
+        
+        renderHistoryTable(historyTbody, list);
+    } catch (err) {
+        console.error('Filter error:', err);
+        historyTbody.innerHTML = `<tr><td colspan="5" style="color:red">Lỗi: ${err.message}</td></tr>`;
+    }
+}
+
+
+    function renderHistoryTable(tbody, list) {
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Không có dữ liệu</td></tr>';
+            return;
+        }
+
+        const statusMap = {
+            'PENDING': '<span class="badge badge-amber">⏳ Chờ Duyệt</span>',
+            'APPROVED': '<span class="badge badge-green">✅ Đã Duyệt</span>',
+            'REJECTED': '<span class="badge badge-red">❌ Từ Chối</span>'
+        };
+
+        tbody.innerHTML = list.map((l, i) => {
+            // Format ngày hiển thị theo kiểu DD/MM/YYYY
+            const startDate = l.startDate ? formatDisplayDate(l.startDate) : '—';
+            const endDate = l.endDate ? formatDisplayDate(l.endDate) : '—';
+            
+            return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${l.user?.username || '—'}</td>
+                    <td>${startDate} - ${endDate}</td>
+                    <td>${statusMap[l.status] || l.status}</td>
+                    <td>${l.reason || '—'}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderRequestTable(tbody, list) {
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Không có dữ liệu</td></tr>';
+            return;
+        }
+
+        const statusMap = {
+            'PENDING': '<span class="badge badge-amber">⏳ Chờ Duyệt</span>',
+            'APPROVED': '<span class="badge badge-green">✅ Đã Duyệt</span>',
+            'REJECTED': '<span class="badge badge-red">❌ Từ Chối</span>'
+        };
+
+        tbody.innerHTML = list.map((l, i) => {
+            // Format ngày hiển thị theo kiểu DD/MM/YYYY
+            const startDate = l.startDate ? formatDisplayDate(l.startDate) : '—';
+            const endDate = l.endDate ? formatDisplayDate(l.endDate) : '—';
+            
+            return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${l.user?.username || '—'}</td>
+                    <td>${startDate}</td>
+                    <td>${endDate}</td>
+                    <td>${l.reason || '—'}</td>
+                    <td>${statusMap[l.status] || l.status}</td>
+                    <td>
+                        ${canApprove && l.status === 'PENDING' ? 
+                            `<button class="btn btn-success btn-sm" onclick="approveLeave(${l.id})">Duyệt</button>` : 
+                            '—'
+                        }
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Gắn sự kiện
+    document.getElementById('searchName').addEventListener('input', applyFilters);
+    document.getElementById('leaveDate').addEventListener('change', applyFilters);
+
+    // Khởi tạo trang
+    loadLeaveRequests();
+    applyFilters();
+
+    // Kiểm tra apiGet function có hoạt động không
+    console.log('apiGet function:', typeof apiGet);
+
+    // Các hàm Modal giữ nguyên
+    function openCreateModal() { 
+        document.getElementById('createModal').classList.add('open'); 
+    }
+    
+    function closeCreateModal() { 
+        document.getElementById('createModal').classList.remove('open'); 
+    }
+
+    function openRejectModal(id) {
+        document.getElementById('rejectId').value = id;
+        document.getElementById('rejectReason').value = '';
+        document.getElementById('rejectModal').classList.add('open');
+    }
+    
+    function closeRejectModal() { 
+        document.getElementById('rejectModal').classList.remove('open'); 
+    }
+
+    async function submitLeave() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const reason = document.getElementById('reason').value;
+        
+        if (!startDate || !endDate) { 
+            showToast('Vui lòng chọn ngày', 'error'); 
+            return; 
+        }
+        
+        try {
+            await apiPost('/leave', { startDate, endDate, reason });
+            showToast('Gửi đơn thành công!', 'success');
+            closeCreateModal();
+            loadLeaveRequests();
+            applyFilters();
+        } catch (err) { 
+            showToast(err.message, 'error'); 
+        }
+    }
+
+    async function approveLeave(id) {
+        try {
+            await apiPut(`/leave/${id}/status`, { approved: true });
+            showToast('Đã duyệt đơn!', 'success');
+            loadLeaveRequests();
+            applyFilters();
+        } catch (err) { 
+            showToast(err.message, 'error'); 
+        }
+    }
+
+    async function confirmReject() {
+        const id = document.getElementById('rejectId').value;
+        const rejectReason = document.getElementById('rejectReason').value;
+        
+        try {
+            await apiPut(`/leave/${id}/status`, { approved: false, rejectReason });
+            showToast('Đã từ chối đơn!', 'info');
+            closeRejectModal();
+            loadLeaveRequests();
+            applyFilters();
+        } catch (err) { 
+            showToast(err.message, 'error'); 
+        }
+    }
+</script> -->
     <script>
-        requireAuth();
-        document.getElementById('sidebar-container').innerHTML = renderSidebar('leave');
-        const today = todayISO();
-        document.getElementById('startDate').value = today;
-        document.getElementById('endDate').value = today;
+    requireAuth();
+    document.getElementById('sidebar-container').innerHTML = renderSidebar('leave');
+    
+    // Lấy ngày hiện tại
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayFormatted = `${year}-${month}-${day}`;
+    
+    document.getElementById('startDate').value = todayFormatted;
+    document.getElementById('endDate').value = todayFormatted;
+    document.getElementById('leaveDate').value = '';
 
-        const role = getRole();
-        const canApprove = role === 'ADMIN' || role === 'MANAGER';
+    const role = getRole();
+    const canApprove = role === 'ADMIN' || role === 'MANAGER';
 
-        async function loadLeave() {
-            const tbody = document.getElementById('leaveBody');
-            try {
-                const endpoint = canApprove ? '/leave/all' : '/leave/my';
-                const list = await apiGet(endpoint);
-                if (!list || list.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Chưa có đơn nào</td></tr>';
-                    return;
-                }
-                const statusMap = {
-                    PENDING: '<span class="badge badge-amber">⏳ Chờ Duyệt</span>',
-                    APPROVED: '<span class="badge badge-green">✅ Đã Duyệt</span>',
-                    REJECTED: '<span class="badge badge-red">❌ Từ Chối</span>',
-                };
-                tbody.innerHTML = list.map((l, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${l.user?.username || '—'}</td>
-          <td>${formatDate(l.startDate)}</td>
-          <td>${formatDate(l.endDate)}</td>
-          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${l.reason || ''}">${l.reason || '—'}</td>
-          <td>${statusMap[l.status] || l.status}</td>
-          <td>
-            ${canApprove && l.status === 'PENDING' ? `
-              <button class="btn btn-success btn-sm" onclick="approveLeave(${l.id})">✅ Duyệt</button>
-              <button class="btn btn-danger btn-sm" onclick="openRejectModal(${l.id})">❌ Từ Chối</button>
-            ` : '—'}
-          </td>
-        </tr>`).join('');
-            } catch (err) {
-                console.error(err);
-                showToast(err.message, 'error');
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:red">Lỗi: ${err.message}</td></tr>`;
+    // Hàm format ngày hiển thị
+    function formatDisplayDate(dateStr) {
+        if (!dateStr) return '—';
+        if (dateStr.includes('-')) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+        return dateStr;
+    }
+
+    // Hàm load dữ liệu - GỌI CHUNG 1 HÀM
+    async function loadLeaveData() {
+        const tbody = document.getElementById('leaveTableBody');
+        const date = document.getElementById('leaveDate').value;
+        
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Đang tải...</td></tr>';
+
+        try {
+            let url;
+            if (date) {
+                // Nếu có lọc theo ngày
+                url = `/leave?date=${date}`;
+            } else {
+                // Không lọc - lấy tất cả
+                url = canApprove ? '/leave/all' : '/leave/my';
             }
+            
+            console.log('Loading data from:', url);
+            const list = await apiGet(url);
+            console.log('Received data:', list);
+            
+            renderLeaveTable(tbody, list);
+        } catch (err) {
+            console.error('Error loading data:', err);
+            tbody.innerHTML = `<tr><td colspan="7" style="color:red">Lỗi: ${err.message}</td></tr>`;
+        }
+    }
+
+    // Hàm render bảng
+    function renderLeaveTable(tbody, list) {
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Không có dữ liệu</td></tr>';
+            return;
         }
 
-        function openCreateModal() { document.getElementById('createModal').classList.add('open'); }
-        function closeCreateModal() { document.getElementById('createModal').classList.remove('open'); }
+        const statusMap = {
+            'PENDING': '<span class="badge badge-amber">⏳ Chờ Duyệt</span>',
+            'APPROVED': '<span class="badge badge-green">✅ Đã Duyệt</span>',
+            'REJECTED': '<span class="badge badge-red">❌ Từ Chối</span>'
+        };
 
-        function openRejectModal(id) {
-            document.getElementById('rejectId').value = id;
-            document.getElementById('rejectReason').value = '';
-            document.getElementById('rejectModal').classList.add('open');
+        tbody.innerHTML = list.map((l, i) => {
+            const startDate = formatDisplayDate(l.startDate);
+            const endDate = formatDisplayDate(l.endDate);
+            
+            return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${l.user?.username || '—'}</td>
+                    <td>${startDate}</td>
+                    <td>${endDate}</td>
+                    <td>${l.reason || '—'}</td>
+                    <td>${statusMap[l.status] || l.status}</td>
+                    <td>
+                        ${canApprove && l.status === 'PENDING' ? 
+                            `<button class="btn btn-success btn-sm" onclick="approveLeave(${l.id})">Duyệt</button>` : 
+                            '—'
+                        }
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Hàm lọc theo ngày
+    async function applyFilter() {
+        const date = document.getElementById('leaveDate').value;
+        const displaySpan = document.getElementById('displayDate');
+        
+        if (date) {
+            const [y, m, d] = date.split('-');
+            displaySpan.textContent = `Đang lọc: ${d}/${m}/${y}`;
+        } else {
+            displaySpan.textContent = '';
         }
-        function closeRejectModal() { document.getElementById('rejectModal').classList.remove('open'); }
+        
+        await loadLeaveData();
+    }
 
-        async function submitLeave() {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            const reason = document.getElementById('reason').value;
-            if (!startDate || !endDate) { showToast('Vui lòng chọn ngày', 'error'); return; }
-            try {
-                await apiPost('/leave', { startDate, endDate, reason });
-                showToast('Gửi đơn thành công!', 'success');
-                closeCreateModal();
-                loadLeave();
-            } catch (err) { showToast(err.message, 'error'); }
+    // Hàm xóa lọc
+    function clearFilter() {
+        document.getElementById('leaveDate').value = '';
+        document.getElementById('displayDate').textContent = '';
+        loadLeaveData();
+    }
+
+    // Tìm kiếm theo tên (kết hợp với lọc ngày nếu có)
+    async function searchByName() {
+        const name = document.getElementById('searchName').value.trim();
+        const date = document.getElementById('leaveDate').value;
+        const tbody = document.getElementById('leaveTableBody');
+        
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Đang tìm kiếm...</td></tr>';
+
+        try {
+            let params = new URLSearchParams();
+            if (name) params.append('name', name);
+            if (date) params.append('date', date);
+            
+            const queryString = params.toString();
+            const url = queryString ? `/leave?${queryString}` : (canApprove ? '/leave/all' : '/leave/my');
+            
+            const list = await apiGet(url);
+            renderLeaveTable(tbody, list);
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="7" style="color:red">Lỗi: ${err.message}</td></tr>`;
         }
+    }
 
-        async function approveLeave(id) {
-            try {
-                await apiPut(`/leave/${id}/status`, { approved: true });
-                showToast('Đã duyệt đơn!', 'success');
-                loadLeave();
-            } catch (err) { showToast(err.message, 'error'); }
+    // Gắn sự kiện
+    document.getElementById('searchName').addEventListener('input', searchByName);
+    document.getElementById('leaveDate').addEventListener('change', applyFilter);
+
+    // Khởi tạo trang
+    loadLeaveData();
+
+    // Các hàm Modal giữ nguyên
+    function openCreateModal() { 
+        document.getElementById('createModal').classList.add('open'); 
+    }
+    
+    function closeCreateModal() { 
+        document.getElementById('createModal').classList.remove('open'); 
+    }
+
+    function openRejectModal(id) {
+        document.getElementById('rejectId').value = id;
+        document.getElementById('rejectReason').value = '';
+        document.getElementById('rejectModal').classList.add('open');
+    }
+    
+    function closeRejectModal() { 
+        document.getElementById('rejectModal').classList.remove('open'); 
+    }
+
+    async function submitLeave() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const reason = document.getElementById('reason').value;
+        
+        if (!startDate || !endDate) { 
+            showToast('Vui lòng chọn ngày', 'error'); 
+            return; 
         }
-
-        async function confirmReject() {
-            const id = document.getElementById('rejectId').value;
-            const rejectReason = document.getElementById('rejectReason').value;
-            try {
-                await apiPut(`/leave/${id}/status`, { approved: false, rejectReason });
-                showToast('Đã từ chối đơn!', 'info');
-                closeRejectModal();
-                loadLeave();
-            } catch (err) { showToast(err.message, 'error'); }
+        
+        try {
+            await apiPost('/leave', { startDate, endDate, reason });
+            showToast('Gửi đơn thành công!', 'success');
+            closeCreateModal();
+            loadLeaveData(); // Load lại dữ liệu
+        } catch (err) { 
+            showToast(err.message, 'error'); 
         }
+    }
 
-        loadLeave();
-    </script>
+    async function approveLeave(id) {
+        try {
+            await apiPut(`/leave/${id}/status`, { approved: true });
+            showToast('Đã duyệt đơn!', 'success');
+            loadLeaveData(); // Load lại dữ liệu
+        } catch (err) { 
+            showToast(err.message, 'error'); 
+        }
+    }
+
+    async function confirmReject() {
+        const id = document.getElementById('rejectId').value;
+        const rejectReason = document.getElementById('rejectReason').value;
+        
+        try {
+            await apiPut(`/leave/${id}/status`, { approved: false, rejectReason });
+            showToast('Đã từ chối đơn!', 'info');
+            closeRejectModal();
+            loadLeaveData(); // Load lại dữ liệu
+        } catch (err) { 
+            showToast(err.message, 'error'); 
+        }
+    }
+</script>
 </body>
 
 </html>
