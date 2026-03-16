@@ -43,7 +43,6 @@ public class AttendanceController {
                 .build());
     }
 
-
     @PostMapping("/check-in/qr")
     public ResponseEntity<Attendance> checkInQr(@RequestBody Map<String, String> body) {
         String employeeId = body.get("employeeId");
