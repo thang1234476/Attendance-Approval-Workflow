@@ -9,11 +9,14 @@ import com.example.attendance.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +60,11 @@ public class AttendanceService {
                 .status(status)
                 .build();
 
-        return repository.save(attendance);
+        Attendance savedAttendance = repository.save(attendance);
+
+        sendCheckInToN8n(user.getUsername(), user.getTelegramId(), status.toString(), savedAttendance.getCheckInTime());
+
+        return savedAttendance;
     }
 
     public List<Attendance> getAllUsers() {
@@ -94,5 +101,22 @@ public class AttendanceService {
                 .lateCount(late)
                 .notCheckedIn(notCheckedIn)
                 .build();
+    }
+
+    private void sendCheckInToN8n(String name, String telegramId, String status, LocalDateTime time) {
+        try {
+            String webhookUrl = "https://thawnn8n.app.n8n.cloud/webhook-test/attendance-checkin";
+            RestTemplate restTemplate = new RestTemplate();
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", name);
+            data.put("telegramId", telegramId);
+            data.put("status", status);
+            data.put("checkInTime", time.toString());
+
+            restTemplate.postForEntity(webhookUrl, data, String.class);
+        } catch (Exception e) {
+            System.err.println("Lỗi gửi Webhook n8n: " + e.getMessage());
+        }
     }
 }
