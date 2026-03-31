@@ -32,4 +32,32 @@ public class SystemConfigController {
         }
         return ResponseEntity.ok(service.updateConfig(key, value));
     }
+
+
+
+
+
+        // Cập nhật nhiều cấu hình cùng lúc
+    @PutMapping("/batch")
+    public ResponseEntity<Map<String, String>> updateMultipleConfigs(@RequestBody Map<String, String> configs) {
+        Map<String, String> result = service.updateMultipleConfigs(configs);
+        return ResponseEntity.ok(result);
+    }
+
+    // Lấy cấu hình dưới dạng Map
+    @GetMapping("/map")
+    public ResponseEntity<Map<String, String>> getAllConfigsAsMap() {
+        Map<String, String> configs = service.getAllConfigsAsMap();
+        return ResponseEntity.ok(configs);
+    }
+
+    // Lấy giá trị cấu hình cụ thể
+    @GetMapping("/{key}")
+    public ResponseEntity<String> getConfigValue(@PathVariable String key) {
+        String value = service.getConfigValue(key);
+        if (value == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(value);
+    }
 }

@@ -50,3 +50,4 @@ public class AttendanceController {
         return ResponseEntity.ok(service.checkIn(userId));
     }
 }
+ 

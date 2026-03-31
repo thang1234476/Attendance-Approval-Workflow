@@ -152,3 +152,73 @@ function formatDate(d) {
 }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 
+function setUserId(id) { localStorage.setItem('user_id', id); }
+function getUserId() { return localStorage.getItem('user_id'); }
+
+
+
+
+
+// === Export helpers ===
+function downloadFile(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// === User info helper ===
+async function getCurrentUser() {
+    try {
+        const user = await apiGet('/auth/me');
+        return user;
+    } catch (err) {
+        console.error('Cannot get current user:', err);
+        return null;
+    }
+}
+
+// === Export attendance Excel ===
+async function exportAttendanceExcel(year, month) {
+    const token = getToken();
+    if (!token) {
+        showToast('Vui lòng đăng nhập lại', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/attendance/export?month=${month}&year=${year}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error || 'Export thất bại');
+        }
+        
+        const blob = await response.blob();
+        downloadFile(blob, `attendance_${year}_${month}.xlsx`);
+        showToast('Export thành công!', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+        throw err;
+    }
+}
+
+// === Lấy thông tin user hiện tại (có id) ===
+async function getCurrentUserWithId() {
+    try {
+        const user = await apiGet('/auth/me');
+        return user;
+    } catch (err) {
+        console.error('Cannot get current user:', err);
+        return null;
+    }
+}

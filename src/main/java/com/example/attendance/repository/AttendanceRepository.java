@@ -1,4 +1,4 @@
-package com.example.attendance.repository;
+ package com.example.attendance.repository;
 
 import com.example.attendance.entity.Attendance;
 import com.example.attendance.entity.AttendanceStatus;

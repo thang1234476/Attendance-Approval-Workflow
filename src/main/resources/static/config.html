@@ -39,7 +39,7 @@
                     </div>
                     <button class="btn btn-primary" style="width:100%" onclick="saveConfig()">💾 Lưu Cấu Hình</button>
 
-                    <div style="margin-top:24px">
+                    <!-- <div style="margin-top:24px">
                         <p class="card-title" style="margin-bottom:10px">📖 Hướng Dẫn</p>
                         <div
                             style="font-size:0.82rem;color:var(--text-muted);display:flex;flex-direction:column;gap:8px">
@@ -53,13 +53,53 @@
                                 Số phút cho phép trễ. Format: số nguyên.<br>
                                 Ví dụ: <code>15</code>
                             </div>
-                            <!-- <div class="card" style="padding:12px;background:var(--bg)">
+                            <div class="card" style="padding:12px;background:var(--bg)">
                                 <code style="color:var(--primary)">TELEGRAM_BOT_TOKEN</code><br>
                                 Token bot Telegram để gửi thông báo.<br>
                                 Ví dụ: <code>123456:ABCdef...</code>
-                            </div> -->
+                            </div>
                         </div>
-                    </div>
+                    </div> -->
+                        <div style="margin-top:24px">
+    <p class="card-title" style="margin-bottom:10px">📖 Hướng Dẫn</p>
+    <div style="font-size:0.82rem;color:var(--text-muted);display:flex;flex-direction:column;gap:8px">
+        <div class="card" style="padding:12px;background:var(--bg)">
+            <code style="color:var(--primary)">WORK_START_TIME</code><br>
+            Giờ bắt đầu làm việc. Format: <code>HH:mm</code><br>
+            Ví dụ: <code>09:00</code>
+        </div>
+        <div class="card" style="padding:12px;background:var(--bg)">
+            <code style="color:var(--primary)">GRACE_PERIOD_MINS</code><br>
+            Số phút cho phép trễ. Format: số nguyên.<br>
+            Ví dụ: <code>15</code>
+        </div>
+        <div class="card" style="padding:12px;background:var(--bg)">
+            <code style="color:var(--primary)">WORK_END_TIME</code><br>
+            Giờ kết thúc làm việc (tan ca). Format: <code>HH:mm</code><br>
+            Ví dụ: <code>17:00</code>
+        </div>
+        <div class="card" style="padding:12px;background:var(--bg)">
+            <code style="color:var(--primary)">EARLY_LEAVE_THRESHOLD</code><br>
+            Số phút được phép về sớm (trước giờ tan ca). Format: số nguyên.<br>
+            Ví dụ: <code>5</code> (về sớm dưới 5p vẫn tính đúng giờ)
+        </div>
+        <div class="card" style="padding:12px;background:var(--bg)">
+            <code style="color:var(--primary)">OT_THRESHOLD</code><br>
+            Số phút làm thêm tối thiểu để tính OT. Format: số nguyên.<br>
+            Ví dụ: <code>20</code> (làm thêm trên 20p mới tính OT)
+        </div>
+    </div>
+</div>
+
+<div style="display: flex; gap: 10px; margin-top: 10px;">
+    <button class="btn btn-primary" style="flex:1" onclick="saveConfig()">💾 Lưu Cấu Hình</button>
+    <button class="btn btn-outline" style="flex:1" onclick="resetDefaultConfig()">🔄 Reset Mặc Định</button>
+</div>
+
+
+
+
+
                 </div>
             </div>
         </main>
@@ -111,6 +151,32 @@
                 loadConfigs();
             } catch (err) { showToast(err.message, 'error'); }
         }
+        // Reset về cấu hình mặc định
+async function resetDefaultConfig() {
+    const defaultConfigs = [
+        { key: 'WORK_START_TIME', value: '09:00' },
+        { key: 'GRACE_PERIOD_MINS', value: '15' },
+        { key: 'WORK_END_TIME', value: '17:00' },
+        { key: 'EARLY_LEAVE_THRESHOLD', value: '5' },
+        { key: 'OT_THRESHOLD', value: '20' }
+    ];
+    
+    if (!confirm('Bạn có chắc muốn reset tất cả cấu hình về mặc định?')) return;
+    
+    try {
+        for (const cfg of defaultConfigs) {
+            await apiPut('/admin/config', { key: cfg.key, value: cfg.value });
+        }
+        showToast('Reset cấu hình thành công!', 'success');
+        loadConfigs();
+        
+        // Clear form
+        document.getElementById('cfgKey').value = '';
+        document.getElementById('cfgValue').value = '';
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
 
         loadConfigs();
     </script>
