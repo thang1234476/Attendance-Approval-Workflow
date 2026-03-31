@@ -679,4 +679,11 @@ select.form-control {
         margin-left: 60px;
         padding: 16px;
     }
+    .btn-warning {
+    background-color: #f59e0b;
+    color: white;
+}
+.btn-warning:hover {
+    background-color: #d97706;
+}
 }

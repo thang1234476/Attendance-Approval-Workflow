@@ -31,4 +31,37 @@ public class SystemConfigService {
                 .map(SystemConfig::getConfigValue)
                 .orElse(null);
     }
+
+
+
+
+
+
+        // Lấy nhiều cấu hình cùng lúc
+    public java.util.Map<String, String> getMultipleConfigs(List<String> keys) {
+        java.util.Map<String, String> result = new java.util.HashMap<>();
+        for (String key : keys) {
+            result.put(key, getConfigValue(key));
+        }
+        return result;
+    }
+
+    // Cập nhật nhiều cấu hình cùng lúc
+    public java.util.Map<String, String> updateMultipleConfigs(java.util.Map<String, String> configs) {
+        java.util.Map<String, String> result = new java.util.HashMap<>();
+        for (java.util.Map.Entry<String, String> entry : configs.entrySet()) {
+            SystemConfig updated = updateConfig(entry.getKey(), entry.getValue());
+            result.put(updated.getConfigKey(), updated.getConfigValue());
+        }
+        return result;
+    }
+
+    // Lấy tất cả cấu hình dưới dạng Map
+    public java.util.Map<String, String> getAllConfigsAsMap() {
+        java.util.Map<String, String> result = new java.util.HashMap<>();
+        for (SystemConfig config : repository.findAll()) {
+            result.put(config.getConfigKey(), config.getConfigValue());
+        }
+        return result;
+    }
 }
