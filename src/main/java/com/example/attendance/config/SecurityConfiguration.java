@@ -58,6 +58,11 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+
+        // configuration.setAllowedOrigins(List.of(
+        // "https://thangnguyen.id.vn",
+        // "http://localhost:3000" // Vẫn giữ để test local nếu cần
+        // ));
         // Cho phép mọi origin trong môi trường dev; hạn chế lại trong production
         configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
