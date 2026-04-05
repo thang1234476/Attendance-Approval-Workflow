@@ -24,28 +24,25 @@ jobs:
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
-      # --- BƯỚC 3: ĐẨY FILE LÊN VPS (Sử dụng SSH Key) ---
+      # --- BƯỚC 3: ĐẨY FILE LÊN VPS ---
       - name: Copy files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_PASSWORD }}
-          # Chỉ đích danh file JAR, không lấy cả folder target rườm rà
+          password: ${{ secrets.VPS_SSH_PASSWORD }} # <--- ĐỔI TỪ key THÀNH password
           source: "target/AttendanceSystem-0.0.1-SNAPSHOT.jar,Dockerfile,docker-compose.yml" 
           target: "~/attendance"
           strip_components: 1
 
-      # --- BƯỚC 4: KÍCH HOẠT DOCKER TRÊN VPS ---
+      # --- BƯỚC 4: KÍCH HOẠT DOCKER ---
       - name: Executing remote ssh commands
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_PASSWORD }}
+          password: ${{ secrets.VPS_SSH_PASSWORD }} # <--- ĐỔI TỪ key THÀNH password
           script: |
             cd ~/attendance
-            # Build lại Image từ file JAR mới đẩy lên
             docker-compose up -d --build
-            # Dọn dẹp các Image cũ/thừa để giải phóng bộ nhớ VPS
             docker image prune -f
