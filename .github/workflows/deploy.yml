@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_SSH_PASSWORD }}
           # Dùng dấu ** để nó tìm sâu vào tất cả thư mục con, chắc chắn sẽ thấy file .jar
-          source: "**/target/*.jar,Dockerfile,docker-compose.yml"
+          source: "**/attendance-system-0.0.1-SNAPSHOT.jar,Dockerfile,docker-compose.yml"
           target: "~/attendance"
           strip_components: 2 
 
