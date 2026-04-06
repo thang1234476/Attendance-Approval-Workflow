@@ -54,5 +54,5 @@ jobs:
               docker compose down
               docker rmi my-web-app:latest || true
               docker compose build --no-cache
-              docker compose up -d            
+              docker compose up -d --force-recreate 
               docker image prune -f
