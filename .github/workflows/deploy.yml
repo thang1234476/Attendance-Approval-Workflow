@@ -46,5 +46,5 @@ jobs:
           script: |
             cd ~/attendance
             docker compose down
-            docker compose up -d --no-deps attendance-app
+            docker compose up -d --build --force-recreate
             docker image prune -f
