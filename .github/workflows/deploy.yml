@@ -30,6 +30,15 @@ jobs:
       - name: Get Build Checksum
         run: md5sum target/*.jar
 
+      - name: Clean VPS folder
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_SSH_PASSWORD }}
+          script: |
+            rm -f ~/attendance/*.jar
+
       # --- BƯỚC 3: ĐẨY FILE LÊN VPS ---
       - name: Copy files to VPS
         uses: appleboy/scp-action@v0.1.7
