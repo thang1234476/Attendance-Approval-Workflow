@@ -22,7 +22,10 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: mvn clean package -DskipTeststrue
+
+      - name: Get Build Checksum
+  run: md5sum target/*.jar
 
       # --- BƯỚC 3: ĐẨY FILE LÊN VPS ---
       - name: Copy files to VPS
@@ -46,6 +49,6 @@ jobs:
           script: |
             cd ~/attendance
             docker compose down
-            docker image rm attendance-my-web-app
+            docker image rm attendance-my-web-app || true
             docker compose up -d --build
             docker image prune -f
