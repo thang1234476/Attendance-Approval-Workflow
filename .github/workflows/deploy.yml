@@ -51,18 +51,8 @@ jobs:
           password: ${{ secrets.VPS_SSH_PASSWORD }} # <--- ĐỔI TỪ key THÀNH password
           script: |
               cd ~/attendance
-
-              echo "=== CHECK FILE ==="
-              ls -l
-            
-              echo "=== REMOVE OLD ==="
-              docker compose down --rmi all
-            
-              echo "=== BUILD NEW ==="
+              docker compose down
+              docker rmi my-web-app:latest || true
               docker compose build --no-cache
-            
-              echo "=== RUN ==="
-              docker compose up -d
-            
-              echo "=== CLEAN ==="
+              docker compose up -d            
               docker image prune -f
