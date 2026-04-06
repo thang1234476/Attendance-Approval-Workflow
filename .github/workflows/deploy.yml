@@ -25,7 +25,7 @@ jobs:
         run: mvn clean package -DskipTeststrue
 
       - name: Get Build Checksum
-  run: md5sum target/*.jar
+        run: md5sum target/*.jar
 
       # --- BƯỚC 3: ĐẨY FILE LÊN VPS ---
       - name: Copy files to VPS
