@@ -45,5 +45,5 @@ jobs:
           password: ${{ secrets.VPS_SSH_PASSWORD }} # <--- ĐỔI TỪ key THÀNH password
           script: |
             cd ~/attendance
-            docker-compose up -d --build
+            docker compose up -d --no-deps attendance-app
             docker image prune -f
