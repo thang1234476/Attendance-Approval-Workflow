@@ -22,7 +22,7 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn clean package -DskipTeststrue
+        run: mvn clean package -DskipTests
 
       - name: Check Fingerprint (MD5) # <--- THÊM BƯỚC NÀY
         run: md5sum target/attendance-system-0.0.1-SNAPSHOT.jar
@@ -50,8 +50,19 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_SSH_PASSWORD }} # <--- ĐỔI TỪ key THÀNH password
           script: |
-            cd ~/attendance
-            docker compose down
-            docker image rm attendance-my-web-app || true
-            docker compose up -d --build
-            docker image prune -f
+              cd ~/attendance
+
+              echo "=== CHECK FILE ==="
+              ls -l
+            
+              echo "=== REMOVE OLD ==="
+              docker compose down --rmi all
+            
+              echo "=== BUILD NEW ==="
+              docker compose build --no-cache
+            
+              echo "=== RUN ==="
+              docker compose up -d
+            
+              echo "=== CLEAN ==="
+              docker image prune -f
