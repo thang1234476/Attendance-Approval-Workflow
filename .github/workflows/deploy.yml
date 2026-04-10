@@ -3,7 +3,7 @@ name: Deployment Attendance System
 on:
   push:
     branches: [ "main" ] # Tự động chạy khi ông push code lên nhánh main
-
+ 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -24,6 +24,21 @@ jobs:
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
+      - name: Check Fingerprint (MD5) # <--- THÊM BƯỚC NÀY
+        run: md5sum target/attendance-system-0.0.1-SNAPSHOT.jar
+
+      - name: Get Build Checksum
+        run: md5sum target/*.jar
+
+      - name: Clean VPS folder
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_SSH_PASSWORD }}
+          script: |
+            rm -f ~/attendance/*.jar
+
       # --- BƯỚC 3: ĐẨY FILE LÊN VPS ---
       - name: Copy files to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -43,9 +58,10 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_SSH_PASSWORD }} # <--- ĐỔI TỪ key THÀNH password
-          script: |
-            cd ~/attendance
-            docker compose down
-            docker image rm attendance-my-web-app
-            docker compose up -d --build
-            docker image prune -f
+          script: | 
+              cd ~/attendance
+              docker compose down
+              docker rmi my-web-app:latest || true
+              docker compose build --no-cache
+              docker compose up -d --force-recreate 
+              docker image prune -f
