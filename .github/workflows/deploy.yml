@@ -21,6 +21,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Check login.html content
+        run: cat src/main/resources/static/login.html | grep -i "vku\|attendsys"
+      
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
