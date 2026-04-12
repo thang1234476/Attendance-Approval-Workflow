@@ -10,7 +10,20 @@
 
 <body>
     <div class="app-container">
+        <div id="sidebar-container"></div>
         <div class="main-content">
+            <!-- Thanh gạt nhỏ gọn bên góc trái -->
+            <div class="switch-wrapper">
+                <span class="switch-label">🎯 Hành động:</span>
+                <div class="switch-toggle" id="actionToggle">
+                    <div class="switch-options">
+                        <div class="switch-option">CHECK-IN</div>
+                        <div class="switch-option">CHECK-OUT</div>
+                    </div>
+                    <div class="switch-slider" id="actionSlider">✅</div>
+                </div>
+            </div>
+
             <div class="back-home-wrapper">
                 <button class="btn-home" onclick="window.location.href='dashboard.html'" title="Về trang chủ">
                     📊
@@ -37,43 +50,73 @@
             </div>
             <script src="js/api.js"></script>
             <script>
-                // Khi trang đã load xong
+                // Biến trạng thái hành động: 'checkin' hoặc 'checkout'
+                let currentAction = 'checkin';
+                const slider = document.getElementById('actionSlider');
+                const toggle = document.getElementById('actionToggle');
 
+                // Xử lý click chuyển đổi hành động
+                toggle.addEventListener('click', () => {
+                    if (currentAction === 'checkin') {
+                        currentAction = 'checkout';
+                        slider.classList.add('checkout-mode');
+                        slider.innerHTML = '🚪';
+                    } else {
+                        currentAction = 'checkin';
+                        slider.classList.remove('checkout-mode');
+                        slider.innerHTML = '✅';
+                    }
+                    showToast(`Đã chuyển sang chế độ ${currentAction === 'checkin' ? 'CHECK-IN' : 'CHECK-OUT'}`, 'info');
+                });
+
+                // Quét QR
                 let isScanning = false;
                 function onScanSuccess(decodedText, decodedResult) {
-                    // decodedText: Nội dung mã QR (ID nhân viên)
                     if (isScanning) return;
                     isScanning = true;
 
                     document.getElementById('qr-reader-results').innerText = "ID: " + decodedText;
 
-                    // Tự động gọi API điểm danh mà bạn đã có
-                    apiPost('/attendance/check-in/qr', { employeeId: decodedText })
-                        .then(res => {
-                            showToast("✅ Điểm danh thành công: " + decodedText, "success");
-                            // Dừng camera nếu muốn hoặc để tiếp tục quét người tiếp theo
-                            const statusMap = { 'ON_TIME': '✅ Đúng giờ', 'LATE': '⚠️ Muộn' };
-                            const msg = `Điểm danh thành công! Trạng thái: <strong>${statusMap[res.status] || res.status}</strong>`;
-                            setTimeout(() => { isScanning = false; }, 3000);
-                        })
-                        .catch(err => {
-                            showToast("❌ Lỗi: " + err.message, "error");
-
-                            setTimeout(() => { isScanning = false; }, 2000);
-                        });
+                    if (currentAction === 'checkin') {
+                        // Gọi API check-in
+                        apiPost('/attendance/check-in/qr', { employeeId: decodedText })
+                            .then(res => {
+                                const statusMap = { 'ON_TIME': '✅ Đúng giờ', 'LATE': '⚠️ Muộn' };
+                                const msg = `Check-in thành công! Trạng thái: ${statusMap[res.status] || res.status}`;
+                                document.getElementById('qr-reader-results').innerHTML = msg;
+                                showToast(msg, 'success');
+                                setTimeout(() => { isScanning = false; }, 3000);
+                            })
+                            .catch(err => {
+                                showToast("❌ Lỗi: " + err.message, "error");
+                                setTimeout(() => { isScanning = false; }, 2000);
+                            });
+                    } else {
+                        // Gọi API check-out
+                        apiPost('/attendance/checkout', { userId: parseInt(decodedText) })
+                            .then(res => {
+                                const statusMap = { 'EARLY': '⚠️ Về sớm', 'ON_TIME': '✅ Đúng giờ', 'LATE': '⌛ Về muộn' };
+                                const msg = `Check-out thành công! Giờ ra: ${formatDateTime(res.checkOutTime)}<br>Tổng giờ: ${res.totalHours?.toFixed(2)} giờ<br>Trạng thái: ${statusMap[res.checkoutStatus] || res.checkoutStatus}`;
+                                document.getElementById('qr-reader-results').innerHTML = msg;
+                                showToast('Check-out thành công!', 'success');
+                                setTimeout(() => { isScanning = false; }, 3000);
+                            })
+                            .catch(err => {
+                                showToast("❌ Lỗi: " + err.message, "error");
+                                setTimeout(() => { isScanning = false; }, 2000);
+                            });
+                    }
                 }
 
                 // Cấu hình trình quét
                 let html5QrcodeScanner = new Html5QrcodeScanner(
                     "qr-reader",
                     {
-                        fps: 10,       // Số khung hình trên giây
-                        qrbox: 250,    // Kích thước vùng quét (hình vuông)
+                        fps: 10,
+                        qrbox: 250,
                         aspectRatio: 1.0
                     }
                 );
-
-                // Bắt đầu chạy
                 html5QrcodeScanner.render(onScanSuccess);
             </script>
         </div>
