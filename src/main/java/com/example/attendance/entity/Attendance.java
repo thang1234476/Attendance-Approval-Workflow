@@ -38,4 +38,18 @@ public class Attendance {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+
+     @Column(name = "check_out_time")
+    private LocalDateTime checkOutTime;
+
+    @Column(name = "total_hours")
+    private Double totalHours;
+
+    @Column(name = "overtime_hours")
+    private Double overtimeHours;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "checkout_status")
+    private CheckoutStatus checkoutStatus;
 }

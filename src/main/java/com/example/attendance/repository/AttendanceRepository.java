@@ -33,4 +33,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
         @Query("SELECT a FROM Attendance a WHERE a.checkInTime BETWEEN :start AND :end ORDER BY a.checkInTime DESC")
         List<Attendance> findAllByCheckInTimeBetween(@Param("start") LocalDateTime start,
                         @Param("end") LocalDateTime end);
+
+
+        @Query("SELECT a FROM Attendance a WHERE YEAR(a.checkInTime) = :year AND MONTH(a.checkInTime) = :month ORDER BY a.user.username, a.checkInTime")
+    List<Attendance> findByMonthAndYear(@Param("year") int year, @Param("month") int month);
 }

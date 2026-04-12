@@ -49,5 +49,17 @@ public class AttendanceController {
         Long userId = Long.parseLong(employeeId);
         return ResponseEntity.ok(service.checkIn(userId));
     }
+        @PostMapping("/checkout")
+    public ResponseEntity<?> checkout(@RequestBody Map<String, String> body) {
+        try {
+            Long userId = Long.parseLong(body.get("userId"));
+            Attendance attendance = service.checkout(userId);
+            return ResponseEntity.ok(attendance);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
 }
  
