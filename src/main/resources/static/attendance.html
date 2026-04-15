@@ -195,8 +195,7 @@
         console.error('Error loading attendance:', err);
         showToast(err.message, 'error');
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Lỗi: ${err.message}</td></tr>`;
-    }
-}
+    }}
 
         async function loadHistory() {
             try {
