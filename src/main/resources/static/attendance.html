@@ -49,9 +49,8 @@
                                     <th>#</th>
                                     <th>Nhân Viên</th>
                                     <th>Giờ Check-in</th>
+                                    <th>Giờ Check_out</th>
                                     <th>Trạng Thái</th>
-                                    <th>Check-out</th>
-                                    <th>Ghi Chú</th>
                                 </tr>
                             </thead>
                             <tbody id="attendanceBody">
@@ -146,51 +145,99 @@
             return;
         }
 
-        tbody.innerHTML = list.map((item, index) => {
-            // Trạng thái Check-in
-            let checkinStatus = '';
-            if (item.status === 'ON_TIME') {
-                checkinStatus = '<span class="badge badge-green">✅ Đúng giờ</span>';
-            } else if (item.status === 'LATE') {
-                checkinStatus = '<span class="badge badge-amber">⚠️ Đi trễ</span>';
-            } else {
-                checkinStatus = '<span class="badge badge-gray">—</span>';
-            }
+        // tbody.innerHTML = list.map((item, index) => {
+        //     // Trạng thái Check-in
+        //     let checkinStatus = '';
+        //     if (item.status === 'ON_TIME') {
+        //         checkinStatus = '<span class="badge badge-green">✅ Đúng giờ</span>';
+        //     } else if (item.status === 'LATE') {
+        //         checkinStatus = '<span class="badge badge-amber">⚠️ Đi trễ</span>';
+        //     } else {
+        //         checkinStatus = '<span class="badge badge-gray">—</span>';
+        //     }
             
-            // Trạng thái Check-out
-            let checkoutDisplay = '—';
-            if (item.checkOutTime) {
-                if (item.checkoutStatus === 'EARLY') {
-                    checkoutDisplay = '<span class="badge badge-amber">🚪 Về sớm</span>';
-                } else if (item.checkoutStatus === 'LATE') {
-                    checkoutDisplay = '<span class="badge badge-red">🚪 Về muộn</span>';
-                } else if (item.checkoutStatus === 'ON_TIME') {
-                    checkoutDisplay = '<span class="badge badge-green">🚪 Đúng giờ</span>';
-                } else {
-                    checkoutDisplay = '<span class="badge badge-gray">🚪 Đã checkout</span>';
-                }
-            } else if (item.checkInTime && !item.checkOutTime) {
-                checkoutDisplay = '<span class="badge badge-gray">⏳ Chưa checkout</span>';
-            }
+        //     // Trạng thái Check-out
+        //     let checkoutDisplay = '—';
+        //     if (item.checkOutTime) {
+        //         if (item.checkoutStatus === 'EARLY') {
+        //             checkoutDisplay = '<span class="badge badge-amber">🚪 Về sớm</span>';
+        //         } else if (item.checkoutStatus === 'LATE') {
+        //             checkoutDisplay = '<span class="badge badge-red">🚪 Về muộn</span>';
+        //         } else if (item.checkoutStatus === 'ON_TIME') {
+        //             checkoutDisplay = '<span class="badge badge-green">🚪 Đúng giờ</span>';
+        //         } else {
+        //             checkoutDisplay = '<span class="badge badge-gray">🚪 Đã checkout</span>';
+        //         }
+        //     } else if (item.checkInTime && !item.checkOutTime) {
+        //         checkoutDisplay = '<span class="badge badge-gray">⏳ Chưa checkout</span>';
+        //     }
             
-            // Cột Trạng Thái (gộp cả check-in và check-out nếu có)
-            let statusColumn = checkinStatus;
-            if (item.checkOutTime && checkoutDisplay !== '—') {
-                statusColumn = `${checkinStatus}<br><span style="font-size:11px; margin-top:4px; display:inline-block">${checkoutDisplay}</span>`;
-            }
+        //     // Cột Trạng Thái (gộp cả check-in và check-out nếu có)
+        //     let statusColumn = checkinStatus;
+        //     if (item.checkOutTime && checkoutDisplay !== '—') {
+        //         statusColumn = `${checkinStatus}<br><span style="font-size:11px; margin-top:4px; display:inline-block">${checkoutDisplay}</span>`;
+        //     }
             
-            return `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.user?.username || '—'}</td>
-                    <td>${formatDateTime(item.checkInTime)}</td>
-                    <td>${statusColumn}</td>
-                    <td>${checkoutDisplay}</td>
-                    <td>${item.note || '—'}</td>
-                </tr>
-            `;
-        }).join('');
-
+        //     return `
+        //         <tr>
+        //             <td>${index + 1}</td>
+        //             <td>${item.user?.username || '—'}</td>
+        //             <td>${formatDateTime(item.checkInTime)}</td>
+        //             <td>${statusColumn}</td>
+        //             <td>${checkoutDisplay}</td>
+        //             <td>${item.note || '—'}</td>
+        //         </tr>
+        //     `;
+        // }).join('');
+    tbody.innerHTML = list.map((item, index) => {
+    // Trạng thái Check-in
+    let checkinStatus = '';
+    if (item.status === 'ON_TIME') {
+        checkinStatus = '<span class="badge badge-green">✅ Đúng giờ</span>';
+    } else if (item.status === 'LATE') {
+        checkinStatus = '<span class="badge badge-amber">⚠️ Đi trễ</span>';
+    } else {
+        checkinStatus = '<span class="badge badge-gray">—</span>';
+    }
+    
+    // Trạng thái Check-out (gộp vào cột Trạng Thái)
+    let checkoutStatusText = '';
+    if (item.checkOutTime) {
+        if (item.checkoutStatus === 'EARLY') {
+            checkoutStatusText = '<span class="badge badge-amber" style="margin-top:4px; display:inline-block">🚪 Về sớm</span>';
+        } else if (item.checkoutStatus === 'LATE') {
+            checkoutStatusText = '<span class="badge badge-red" style="margin-top:4px; display:inline-block">🚪 Về muộn</span>';
+        } else if (item.checkoutStatus === 'ON_TIME') {
+            checkoutStatusText = '<span class="badge badge-green" style="margin-top:4px; display:inline-block">🚪 Đúng giờ</span>';
+        }
+    } else if (item.checkInTime && !item.checkOutTime) {
+        checkoutStatusText = '<span class="badge badge-gray" style="margin-top:4px; display:inline-block">⏳ Chưa checkout</span>';
+    }
+    
+    // Cột Trạng Thái (gồm cả check-in và check-out)
+    let statusColumn = checkinStatus;
+    if (checkoutStatusText) {
+        statusColumn = `${checkinStatus}<br>${checkoutStatusText}`;
+    }
+    
+    // Cột Check-out: chỉ hiển thị ngày giờ
+    let checkoutDisplay = '—';
+    if (item.checkOutTime) {
+        checkoutDisplay = formatDateTime(item.checkOutTime);
+    }
+    
+    return `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${item.user?.username || '—'}</td>
+            <td>${formatDateTime(item.checkInTime)}</td>
+            <td>${checkoutDisplay}</td>
+            <td>${statusColumn}</td>
+           
+           
+        </tr>
+    `;
+}).join('');
     } catch (err) {
         console.error('Error loading attendance:', err);
         showToast(err.message, 'error');
