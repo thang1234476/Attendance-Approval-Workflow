@@ -50,12 +50,13 @@
                                     <th>Nhân Viên</th>
                                     <th>Giờ Check-in</th>
                                     <th>Trạng Thái</th>
+                                    <th>Check-out</th>
                                     <th>Ghi Chú</th>
                                 </tr>
                             </thead>
                             <tbody id="attendanceBody">
                                 <tr>
-                                    <td colspan="5" style="text-align:center;color:var(--text-muted)">Đang tải...</td>
+                                    <td colspan="6" style="text-align:center;color:var(--text-muted)">Đang tải...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -124,43 +125,79 @@
         });
 
         async function loadAttendance(selectedDate) {
-            const tbody = document.getElementById('attendanceBody');
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Đang tải...</td></tr>';
+    const tbody = document.getElementById('attendanceBody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Đang tải...</td></tr>';
 
-            try {
-                const role = getRole();
-                const baseEndpoint = (role === 'ADMIN' || role === 'MANAGER') ? '/attendance' : '/attendance/my';
+    try {
+        const role = getRole();
+        const baseEndpoint = (role === 'ADMIN' || role === 'MANAGER') ? '/attendance' : '/attendance/my';
 
-                const list = await apiGet(`${baseEndpoint}?date=${selectedDate}`);
-                document.getElementById('statOnTime').innerText = list.summary.onTimeCount;
-                document.getElementById('statLate').innerText = list.summary.lateCount;
-                document.getElementById('statNotYet').innerText = list.summary.notCheckedIn;
+        const response = await apiGet(`${baseEndpoint}?date=${selectedDate}`);
+        
+        // Lấy dữ liệu từ response
+        const list = response.details || response;
+        const summary = response.summary || {};
+        
+        document.getElementById('statOnTime').innerText = summary.onTimeCount || 0;
+        document.getElementById('statLate').innerText = summary.lateCount || 0;
+        document.getElementById('statNotYet').innerText = summary.notCheckedIn || 0;
 
-                if (!list || list.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">Không có dữ liệu cho ngày ${formatDate(selectedDate)}</td></tr>`;
-                    return;
-                }
-
-                const statusMap = {
-                    ON_TIME: '<span class="badge badge-green">Đúng Giờ</span>',
-                    LATE: '<span class="badge badge-amber">Đi Trễ</span>',
-                    ABSENT: '<span class="badge badge-red">Vắng</span>'
-                };
-
-                tbody.innerHTML = list.details.map((item, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${item.user?.username || '—'}</td>
-                <td>${formatDateTime(item.checkInTime)}</td>
-                <td>${statusMap[item.status] || item.status}</td>
-            </tr>
-        `).join('');
-
-            } catch (err) {
-                showToast(err.message, 'error');
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red">Lỗi: ${err.message}</td></tr>`;
-            }
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">Không có dữ liệu cho ngày ${formatDate(selectedDate)}</td></tr>`;
+            return;
         }
+
+        tbody.innerHTML = list.map((item, index) => {
+            // Trạng thái Check-in
+            let checkinStatus = '';
+            if (item.status === 'ON_TIME') {
+                checkinStatus = '<span class="badge badge-green">✅ Đúng giờ</span>';
+            } else if (item.status === 'LATE') {
+                checkinStatus = '<span class="badge badge-amber">⚠️ Đi trễ</span>';
+            } else {
+                checkinStatus = '<span class="badge badge-gray">—</span>';
+            }
+            
+            // Trạng thái Check-out
+            let checkoutDisplay = '—';
+            if (item.checkOutTime) {
+                if (item.checkoutStatus === 'EARLY') {
+                    checkoutDisplay = '<span class="badge badge-amber">🚪 Về sớm</span>';
+                } else if (item.checkoutStatus === 'LATE') {
+                    checkoutDisplay = '<span class="badge badge-red">🚪 Về muộn</span>';
+                } else if (item.checkoutStatus === 'ON_TIME') {
+                    checkoutDisplay = '<span class="badge badge-green">🚪 Đúng giờ</span>';
+                } else {
+                    checkoutDisplay = '<span class="badge badge-gray">🚪 Đã checkout</span>';
+                }
+            } else if (item.checkInTime && !item.checkOutTime) {
+                checkoutDisplay = '<span class="badge badge-gray">⏳ Chưa checkout</span>';
+            }
+            
+            // Cột Trạng Thái (gộp cả check-in và check-out nếu có)
+            let statusColumn = checkinStatus;
+            if (item.checkOutTime && checkoutDisplay !== '—') {
+                statusColumn = `${checkinStatus}<br><span style="font-size:11px; margin-top:4px; display:inline-block">${checkoutDisplay}</span>`;
+            }
+            
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.user?.username || '—'}</td>
+                    <td>${formatDateTime(item.checkInTime)}</td>
+                    <td>${statusColumn}</td>
+                    <td>${checkoutDisplay}</td>
+                    <td>${item.note || '—'}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error('Error loading attendance:', err);
+        showToast(err.message, 'error');
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Lỗi: ${err.message}</td></tr>`;
+    }
+}
 
         async function loadHistory() {
             try {

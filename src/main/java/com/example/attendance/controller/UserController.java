@@ -37,4 +37,9 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/users")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<List<User>> getAllUsers() {
+    return ResponseEntity.ok(userService.getAllUsers());
+}
 }
