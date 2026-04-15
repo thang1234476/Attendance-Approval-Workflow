@@ -123,8 +123,6 @@
         dateInput.addEventListener('change', () => {
             loadAttendance(dateInput.value);
         });
-
-    
         async function loadAttendance(selectedDate) {
     const tbody = document.getElementById('attendanceBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Đang tải...</td></tr>';
