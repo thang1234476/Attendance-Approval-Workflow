@@ -26,20 +26,16 @@
                     <div id="clock"
                         style="font-size:2.4rem;font-weight:700;color:var(--primary);letter-spacing:2px;margin:12px 0">
                     </div>
-                    <div id="clockDate" style="color:var(--text-muted);font-size:0.85rem;margin-bottom:20px"></div>
-                    <!-- <button class="btn btn-success" style="width:100%;padding:14px;font-size:1rem" id="checkInBtn"
-                        onclick="doCheckIn()">
-                        ✅ Điểm Danh Ngay
-                    </button> -->
-                    <div id="checkInResult" style="margin-top:14px;font-size:0.85rem"></div>
+                    <!-- <div id="clockDate" style="color:var(--text-muted);font-size:0.85rem;margin-bottom:20px"></div>
+                    <div id="checkInResult" style="margin-top:14px;font-size:0.85rem"></div> -->
                 </div>
 
                 <div class="card">
-                    <p class="card-title">📋 Lịch Sử Điểm Danh</p>
-                    <div class="filter-box">
-                        <label for="attendanceDate">Chọn ngày: </label>
-                        <input type="date" id="attendanceDate" class="form-control"
-                            style="width: 200px; display: inline-block;">
+                         <p class="card-title">📋 Lịch Sử Điểm Danh</p>
+                         <div class="filter-box">
+                         <label for="attendanceDate">Chọn ngày:</label>
+                         <input type="date" id="attendanceDate" class="form-control" style="width: 200px;">
+                         <button class="btn btn-success" onclick="exportToExcel()">📊 Export Excel</button>
                     </div>
 
                     <div class="table-wrapper">
@@ -144,51 +140,6 @@
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">Không có dữ liệu cho ngày ${formatDate(selectedDate)}</td></tr>`;
             return;
         }
-
-        // tbody.innerHTML = list.map((item, index) => {
-        //     // Trạng thái Check-in
-        //     let checkinStatus = '';
-        //     if (item.status === 'ON_TIME') {
-        //         checkinStatus = '<span class="badge badge-green">✅ Đúng giờ</span>';
-        //     } else if (item.status === 'LATE') {
-        //         checkinStatus = '<span class="badge badge-amber">⚠️ Đi trễ</span>';
-        //     } else {
-        //         checkinStatus = '<span class="badge badge-gray">—</span>';
-        //     }
-            
-        //     // Trạng thái Check-out
-        //     let checkoutDisplay = '—';
-        //     if (item.checkOutTime) {
-        //         if (item.checkoutStatus === 'EARLY') {
-        //             checkoutDisplay = '<span class="badge badge-amber">🚪 Về sớm</span>';
-        //         } else if (item.checkoutStatus === 'LATE') {
-        //             checkoutDisplay = '<span class="badge badge-red">🚪 Về muộn</span>';
-        //         } else if (item.checkoutStatus === 'ON_TIME') {
-        //             checkoutDisplay = '<span class="badge badge-green">🚪 Đúng giờ</span>';
-        //         } else {
-        //             checkoutDisplay = '<span class="badge badge-gray">🚪 Đã checkout</span>';
-        //         }
-        //     } else if (item.checkInTime && !item.checkOutTime) {
-        //         checkoutDisplay = '<span class="badge badge-gray">⏳ Chưa checkout</span>';
-        //     }
-            
-        //     // Cột Trạng Thái (gộp cả check-in và check-out nếu có)
-        //     let statusColumn = checkinStatus;
-        //     if (item.checkOutTime && checkoutDisplay !== '—') {
-        //         statusColumn = `${checkinStatus}<br><span style="font-size:11px; margin-top:4px; display:inline-block">${checkoutDisplay}</span>`;
-        //     }
-            
-        //     return `
-        //         <tr>
-        //             <td>${index + 1}</td>
-        //             <td>${item.user?.username || '—'}</td>
-        //             <td>${formatDateTime(item.checkInTime)}</td>
-        //             <td>${statusColumn}</td>
-        //             <td>${checkoutDisplay}</td>
-        //             <td>${item.note || '—'}</td>
-        //         </tr>
-        //     `;
-        // }).join('');
     tbody.innerHTML = list.map((item, index) => {
     // Trạng thái Check-in
     let checkinStatus = '';
@@ -271,6 +222,37 @@
                     '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Không có quyền xem lịch sử tất cả</td></tr>';
             }
         }
+        async function exportToExcel() {
+    const date = document.getElementById('attendanceDate').value;
+    if (!date) {
+        showToast('Vui lòng chọn ngày cần export', 'warning');
+        return;
+    }
+    
+    const [year, month, day] = date.split('-');
+    
+    try {
+        showToast('Đang xuất file Excel...', 'info');
+        const token = getToken();
+        const response = await fetch(`/api/attendance/export?month=${month}&year=${year}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) throw new Error('Export thất bại');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `attendance_${year}_${month}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showToast('Xuất file Excel thành công!', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
 
     </script>
 </body>

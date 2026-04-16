@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.example.attendance.entity.CheckoutStatus;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayOutputStream;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -181,52 +184,63 @@ public class AttendanceService {
         return repository.save(attendance);
     }
 
-    // Export Excel theo tháng
-    public byte[] exportToExcel(int year, int month) throws Exception {
-        List<Attendance> attendances = repository.findByMonthAndYear(year, month);
-
-        org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
-        org.apache.poi.ss.usermodel.Sheet sheet = workbook.createSheet("Attendance " + month + "/" + year);
-
-        String[] headers = {"ID", "Nhân viên", "Ngày", "Check-in", "Check-out", "Trạng thái check-in", "Trạng thái check-out", "Tổng giờ", "OT", "Ghi chú"};
-        org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
-        org.apache.poi.ss.usermodel.CellStyle headerStyle = workbook.createCellStyle();
-        org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
-        headerFont.setBold(true);
-        headerStyle.setFont(headerFont);
-
-        for (int i = 0; i < headers.length; i++) {
-            org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(headerStyle);
+    
+    // Export Excel tổng giờ làm theo nhân viên (rút gọn)
+public byte[] exportToExcel(int year, int month) throws Exception {
+    List<Attendance> attendances = repository.findByMonthAndYear(year, month);
+    
+    // Nhóm theo nhân viên và tính tổng giờ
+    Map<String, Double> workingHours = new HashMap<>();
+    Map<String, String> employeeInfo = new HashMap<>();
+    
+    for (Attendance att : attendances) {
+        String username = att.getUser().getUsername();
+        double hours = att.getTotalHours() != null ? att.getTotalHours() : 0;
+        workingHours.put(username, workingHours.getOrDefault(username, 0.0) + hours);
+        if (!employeeInfo.containsKey(username)) {
+            employeeInfo.put(username, att.getUser().getEmail());
         }
-
-        int rowNum = 1;
-        for (Attendance att : attendances) {
-            org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(att.getId());
-            row.createCell(1).setCellValue(att.getUser().getUsername());
-            row.createCell(2).setCellValue(att.getCheckInTime().toLocalDate().toString());
-            row.createCell(3).setCellValue(att.getCheckInTime().toLocalTime().toString());
-            row.createCell(4).setCellValue(att.getCheckOutTime() != null ? att.getCheckOutTime().toLocalTime().toString() : "");
-            row.createCell(5).setCellValue(att.getStatus().toString());
-            row.createCell(6).setCellValue(att.getCheckoutStatus() != null ? att.getCheckoutStatus().toString() : "");
-            row.createCell(7).setCellValue(att.getTotalHours() != null ? att.getTotalHours() : 0);
-            row.createCell(8).setCellValue(att.getOvertimeHours() != null ? att.getOvertimeHours() : 0);
-            row.createCell(9).setCellValue(att.getNote() != null ? att.getNote() : "");
-        }
-
-        for (int i = 0; i < headers.length; i++) {
-            sheet.autoSizeColumn(i);
-        }
-
-        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-        workbook.write(outputStream);
-        workbook.close();
-
-        return outputStream.toByteArray();
     }
-
+    
+    org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+    org.apache.poi.ss.usermodel.Sheet sheet = workbook.createSheet("Tong_gio_lam" + month + "_" + year);
+    
+    // Header: 4 cột
+    String[] headers = {"STT", "Nhân Viên", "Email", "Tổng giờ làm (giờ)"};
+    org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
+    org.apache.poi.ss.usermodel.CellStyle headerStyle = workbook.createCellStyle();
+    org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
+    headerFont.setBold(true);
+    headerStyle.setFont(headerFont);
+    
+    for (int i = 0; i < headers.length; i++) {
+        org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
+        cell.setCellValue(headers[i]);
+        cell.setCellStyle(headerStyle);
+    }
+    
+    // Đổ dữ liệu
+    int rowNum = 1;
+    int stt = 1;
+    for (Map.Entry<String, Double> entry : workingHours.entrySet()) {
+        org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowNum++);
+        row.createCell(0).setCellValue(stt++);
+        row.createCell(1).setCellValue(entry.getKey());
+        row.createCell(2).setCellValue(employeeInfo.get(entry.getKey()));
+        row.createCell(3).setCellValue(Math.round(entry.getValue() * 100) / 100.0);
+    }
+    
+    // Auto-size columns
+    for (int i = 0; i < headers.length; i++) {
+        sheet.autoSizeColumn(i);
+    }
+    
+    java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+    workbook.write(outputStream);
+    workbook.close();
+    
+    return outputStream.toByteArray();
+}
     // Lấy tổng giờ làm theo tháng
     public Map<String, Double> getWorkingHoursByMonth(int year, int month) {
         List<Attendance> attendances = repository.findByMonthAndYear(year, month);

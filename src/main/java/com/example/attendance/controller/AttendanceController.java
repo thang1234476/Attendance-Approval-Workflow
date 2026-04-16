@@ -61,5 +61,18 @@ public class AttendanceController {
             return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
+        @GetMapping("/export")
+    public ResponseEntity<byte[]> exportAttendance(@RequestParam int month, @RequestParam int year) {
+        try {
+            byte[] excel = service.exportToExcel(year, month);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .header("Content-Disposition", "attachment; filename=attendance_" + year + "_" + month + ".xlsx")
+                    .body(excel);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
  
