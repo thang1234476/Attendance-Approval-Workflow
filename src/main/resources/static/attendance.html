@@ -26,8 +26,6 @@
                     <div id="clock"
                         style="font-size:2.4rem;font-weight:700;color:var(--primary);letter-spacing:2px;margin:12px 0">
                     </div>
-                    <!-- <div id="clockDate" style="color:var(--text-muted);font-size:0.85rem;margin-bottom:20px"></div>
-                    <div id="checkInResult" style="margin-top:14px;font-size:0.85rem"></div> -->
                 </div>
 
                 <div class="card">
@@ -36,6 +34,8 @@
                          <label for="attendanceDate">Chọn ngày:</label>
                          <input type="date" id="attendanceDate" class="form-control" style="width: 200px;">
                          <button class="btn btn-success" onclick="exportToExcel()">📊 Export Excel</button>
+                          <div id="clock" style="font-size: 2rem; font-weight: bold; color: var(--primary);"></div>
+                         <div id="clockDate" style="color: var(--text-muted); margin-bottom: 20px;"></div>
                     </div>
 
                     <div class="table-wrapper">
@@ -113,6 +113,7 @@
                 showToast(err.message, 'error');
                 document.getElementById('checkInResult').innerHTML = `<span style="color:var(--danger)">${err.message}</span>`;
                 btn.disabled = false; btn.textContent = '✅ Điểm Danh Ngay';
+                
             }
         }
         dateInput.addEventListener('change', () => {
