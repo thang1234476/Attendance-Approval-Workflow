@@ -110,7 +110,7 @@ public class AttendanceService {
 
     private void sendCheckInToN8n(String name, String telegramId, String status, LocalDateTime time) {
         try {
-            String webhookUrl = "https://thawnn8n.app.n8n.cloud/webhook-test/attendance-checkin";
+            String webhookUrl = "https://n8n.thangnguyen.id.vn/webhook/attendance-checkin";
             RestTemplate restTemplate = new RestTemplate();
 
             Map<String, Object> data = new HashMap<>();
@@ -125,8 +125,11 @@ public class AttendanceService {
         }
     }
 
+    public List<Attendance> getCheckedInNotCheckoutToday(LocalDateTime start, LocalDateTime end) {
+        return repository.findCheckedInNotCheckout(start, end);
+    }
 
-        // Checkout
+    // Checkout
     public Attendance checkout(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User ID " + userId + " không tồn tại"));
@@ -184,63 +187,63 @@ public class AttendanceService {
         return repository.save(attendance);
     }
 
-    
     // Export Excel tổng giờ làm theo nhân viên (rút gọn)
-public byte[] exportToExcel(int year, int month) throws Exception {
-    List<Attendance> attendances = repository.findByMonthAndYear(year, month);
-    
-    // Nhóm theo nhân viên và tính tổng giờ
-    Map<String, Double> workingHours = new HashMap<>();
-    Map<String, String> employeeInfo = new HashMap<>();
-    
-    for (Attendance att : attendances) {
-        String username = att.getUser().getUsername();
-        double hours = att.getTotalHours() != null ? att.getTotalHours() : 0;
-        workingHours.put(username, workingHours.getOrDefault(username, 0.0) + hours);
-        if (!employeeInfo.containsKey(username)) {
-            employeeInfo.put(username, att.getUser().getEmail());
+    public byte[] exportToExcel(int year, int month) throws Exception {
+        List<Attendance> attendances = repository.findByMonthAndYear(year, month);
+
+        // Nhóm theo nhân viên và tính tổng giờ
+        Map<String, Double> workingHours = new HashMap<>();
+        Map<String, String> employeeInfo = new HashMap<>();
+
+        for (Attendance att : attendances) {
+            String username = att.getUser().getUsername();
+            double hours = att.getTotalHours() != null ? att.getTotalHours() : 0;
+            workingHours.put(username, workingHours.getOrDefault(username, 0.0) + hours);
+            if (!employeeInfo.containsKey(username)) {
+                employeeInfo.put(username, att.getUser().getEmail());
+            }
         }
+
+        org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+        org.apache.poi.ss.usermodel.Sheet sheet = workbook.createSheet("Tong_gio_lam" + month + "_" + year);
+
+        // Header: 4 cột
+        String[] headers = { "STT", "Nhân Viên", "Email", "Tổng giờ làm (giờ)" };
+        org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
+        org.apache.poi.ss.usermodel.CellStyle headerStyle = workbook.createCellStyle();
+        org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+
+        for (int i = 0; i < headers.length; i++) {
+            org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        // Đổ dữ liệu
+        int rowNum = 1;
+        int stt = 1;
+        for (Map.Entry<String, Double> entry : workingHours.entrySet()) {
+            org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(stt++);
+            row.createCell(1).setCellValue(entry.getKey());
+            row.createCell(2).setCellValue(employeeInfo.get(entry.getKey()));
+            row.createCell(3).setCellValue(Math.round(entry.getValue() * 100) / 100.0);
+        }
+
+        // Auto-size columns
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        return outputStream.toByteArray();
     }
-    
-    org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
-    org.apache.poi.ss.usermodel.Sheet sheet = workbook.createSheet("Tong_gio_lam" + month + "_" + year);
-    
-    // Header: 4 cột
-    String[] headers = {"STT", "Nhân Viên", "Email", "Tổng giờ làm (giờ)"};
-    org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
-    org.apache.poi.ss.usermodel.CellStyle headerStyle = workbook.createCellStyle();
-    org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
-    headerFont.setBold(true);
-    headerStyle.setFont(headerFont);
-    
-    for (int i = 0; i < headers.length; i++) {
-        org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
-        cell.setCellValue(headers[i]);
-        cell.setCellStyle(headerStyle);
-    }
-    
-    // Đổ dữ liệu
-    int rowNum = 1;
-    int stt = 1;
-    for (Map.Entry<String, Double> entry : workingHours.entrySet()) {
-        org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowNum++);
-        row.createCell(0).setCellValue(stt++);
-        row.createCell(1).setCellValue(entry.getKey());
-        row.createCell(2).setCellValue(employeeInfo.get(entry.getKey()));
-        row.createCell(3).setCellValue(Math.round(entry.getValue() * 100) / 100.0);
-    }
-    
-    // Auto-size columns
-    for (int i = 0; i < headers.length; i++) {
-        sheet.autoSizeColumn(i);
-    }
-    
-    java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-    workbook.write(outputStream);
-    workbook.close();
-    
-    return outputStream.toByteArray();
-}
+
     // Lấy tổng giờ làm theo tháng
     public Map<String, Double> getWorkingHoursByMonth(int year, int month) {
         List<Attendance> attendances = repository.findByMonthAndYear(year, month);

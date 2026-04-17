@@ -45,6 +45,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/auth/**", "/error", "/", "/*.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/api/admin/users").permitAll()
                         .requestMatchers("/api/leave").permitAll()
+                        .requestMatchers("/api/attendance/checkedin/today").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session

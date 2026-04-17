@@ -43,13 +43,25 @@ public class AttendanceController {
                 .build());
     }
 
+    @GetMapping("/checkedin/today")
+    public ResponseEntity<List<Attendance>> getCheckedInToday() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = LocalDateTime.now();
+
+        List<Attendance> attendances = service.getCheckedInNotCheckoutToday(start, end);
+
+        return ResponseEntity.ok(attendances);
+    }
+
     @PostMapping("/check-in/qr")
     public ResponseEntity<Attendance> checkInQr(@RequestBody Map<String, String> body) {
         String employeeId = body.get("employeeId");
         Long userId = Long.parseLong(employeeId);
         return ResponseEntity.ok(service.checkIn(userId));
     }
-        @PostMapping("/checkout")
+
+    @PostMapping("/checkout")
     public ResponseEntity<?> checkout(@RequestBody Map<String, String> body) {
         try {
             Long userId = Long.parseLong(body.get("userId"));
@@ -61,7 +73,8 @@ public class AttendanceController {
             return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
-        @GetMapping("/export")
+
+    @GetMapping("/export")
     public ResponseEntity<byte[]> exportAttendance(@RequestParam int month, @RequestParam int year) {
         try {
             byte[] excel = service.exportToExcel(year, month);
@@ -75,4 +88,3 @@ public class AttendanceController {
         }
     }
 }
- 
