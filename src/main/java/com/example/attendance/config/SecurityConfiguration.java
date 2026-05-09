@@ -53,9 +53,6 @@ public class SecurityConfiguration {
                                 "/js/**")
                         .permitAll()
 
-                        // mở toàn bộ leave API cho n8n
-                        .requestMatchers("/api/leave/**").permitAll()
-
                         .requestMatchers(
                                 "/api/attendance/checkedin/today")
                         .permitAll()
