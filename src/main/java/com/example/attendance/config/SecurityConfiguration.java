@@ -36,22 +36,44 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                // Cho phép CORS để frontend có thể gọi API
+
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép không cần đăng nhập khi truy cập auth endpoints và static files
-                        .requestMatchers("/api/auth/**", "/error", "/", "/*.html", "/css/**", "/js/**").permitAll()
-                        .requestMatchers("/api/admin/users").permitAll()
+
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/error",
+                                "/",
+                                "/*.html",
+                                "/css/**",
+                                "/js/**")
+                        .permitAll()
+
+                        // mở toàn bộ leave API cho n8n
                         .requestMatchers("/api/leave/**").permitAll()
-                        .requestMatchers("/api/attendance/checkedin/today").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                        .requestMatchers(
+                                "/api/attendance/checkedin/today")
+                        .permitAll()
+
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+                        .anyRequest()
+                        .authenticated())
+
+                .sessionManagement(session -> session.sessionCreationPolicy(
+                        SessionCreationPolicy.STATELESS))
+
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
