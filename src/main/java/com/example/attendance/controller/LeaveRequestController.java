@@ -30,8 +30,8 @@ public class LeaveRequestController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return ResponseEntity.ok(service.getMyRequests(auth.getName()));
     }
+    
 @GetMapping
-@PreAuthorize("isAuthenticated()")
 public ResponseEntity<List<LeaveRequest>> getLeaves(
         @RequestParam(required = false) String name,
         @RequestParam(required = false) String date) {
@@ -40,13 +40,11 @@ public ResponseEntity<List<LeaveRequest>> getLeaves(
 }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<List<LeaveRequest>> getAllRequests() {
         return ResponseEntity.ok(service.getAllRequests());
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<LeaveRequest> updateStatus(
             @PathVariable Long id,
             @RequestBody Map<String, Object> payload) {
