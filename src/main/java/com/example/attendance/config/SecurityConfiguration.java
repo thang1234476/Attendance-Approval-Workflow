@@ -44,9 +44,7 @@ public class SecurityConfiguration {
                         // Cho phép không cần đăng nhập khi truy cập auth endpoints và static files
                         .requestMatchers("/api/auth/**", "/error", "/", "/*.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/api/admin/users").permitAll()
-                        .requestMatchers("/api/leave").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/leave/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/leave/**").permitAll()
+                        .requestMatchers("/api/leave/**").permitAll()
                         .requestMatchers("/api/attendance/checkedin/today").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
