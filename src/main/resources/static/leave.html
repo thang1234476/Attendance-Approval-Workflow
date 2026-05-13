@@ -56,6 +56,92 @@
                 </div>
             </div>
 
+
+
+
+
+
+
+
+
+            <!-- PHẦN THỐNG KÊ PHÂN TÍCH NGHỈ PHÉP -->
+<div class="card" style="margin-top: 30px;">
+    <p class="card-title">📊 Phân Tích Nghỉ Phép Theo Tháng/Quý</p>
+    
+    <div class="filter-box" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
+        <div>
+            <label style="font-weight: 500;">Năm:</label>
+            <select id="statYear" class="form-control" style="width: 100px; display: inline-block; margin-left: 8px;">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+            </select>
+        </div>
+        
+        <div>
+            <label style="font-weight: 500;">Chọn theo:</label>
+            <select id="statType" class="form-control" style="width: 120px; display: inline-block; margin-left: 8px;">
+                <option value="month">📅 Theo tháng</option>
+                <option value="quarter">📆 Theo quý</option>
+            </select>
+        </div>
+        
+        <div id="monthSelectDiv">
+            <label style="font-weight: 500;">Tháng:</label>
+            <select id="statMonth" class="form-control" style="width: 100px; display: inline-block; margin-left: 8px;">
+                <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
+                <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
+                <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
+                <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+            </select>
+        </div>
+        
+        <div id="quarterSelectDiv" style="display: none;">
+            <label style="font-weight: 500;">Quý:</label>
+            <select id="statQuarter" class="form-control" style="width: 100px; display: inline-block; margin-left: 8px;">
+                <option value="1">Quý 1 (1-3)</option>
+                <option value="2">Quý 2 (4-6)</option>
+                <option value="3">Quý 3 (7-9)</option>
+                <option value="4">Quý 4 (10-12)</option>
+            </select>
+        </div>
+        
+        <button class="btn btn-primary" onclick="loadStatistics()">📊 Xem thống kê</button>
+        <button class="btn btn-outline" onclick="exportStatisticsExcel()">📎 Xuất Excel</button>
+    </div>
+    
+    <!-- Bảng thống kê nhân viên -->
+    <div class="table-wrapper">
+        <table id="statTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nhân Viên</th>
+                    <th>Số lần nghỉ</th>
+                    <th>Tổng ngày nghỉ</th>
+                    <th>Lý do chính</th>
+                    <th>Chi tiết lý do</th>
+                </tr>
+            </thead>
+            <tbody id="statTableBody">
+                <tr><td colspan="6" style="text-align:center">Chọn năm và tháng/quý để xem thống kê</td></tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Biểu đồ xu hướng (đơn giản) -->
+    <div style="margin-top: 20px;">
+        <p class="card-title" style="margin-bottom: 10px;">📈 Xu hướng nghỉ phép theo tháng</p>
+        <div id="trendChart" style="background: var(--bg); padding: 15px; border-radius: 12px; min-height: 200px;">
+            <div style="display: flex; gap: 8px; align-items: flex-end; height: 180px;" id="chartBars"></div>
+        </div>
+    </div>
+    
+    <!-- Tóm tắt -->
+    <div id="statSummary" style="margin-top: 20px; padding: 15px; background: var(--bg); border-radius: 12px; text-align: center;">
+    </div>
+</div>
+
             <!-- Modal: Tạo đơn nghỉ phép -->
             <div class="modal-overlay" id="createModal">
                 <div class="modal">
@@ -374,6 +460,131 @@
                 }
 
                 loadLeaveData();
+
+
+
+
+
+
+
+
+
+
+
+                // Hiển thị/ẩn select tháng/quý
+document.getElementById('statType').addEventListener('change', function() {
+    const isMonth = this.value === 'month';
+    document.getElementById('monthSelectDiv').style.display = isMonth ? 'inline-block' : 'none';
+    document.getElementById('quarterSelectDiv').style.display = isMonth ? 'none' : 'inline-block';
+});
+
+// Hàm tải thống kê
+async function loadStatistics() {
+    const year = document.getElementById('statYear').value;
+    const statType = document.getElementById('statType').value;
+    let url = `/leave/statistics?year=${year}`;
+    
+    if (statType === 'month') {
+        const month = document.getElementById('statMonth').value;
+        url += `&month=${month}`;
+    } else {
+        const quarter = document.getElementById('statQuarter').value;
+        url += `&quarter=${quarter}`;
+    }
+    
+    const tbody = document.getElementById('statTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Đang tải...</tr>';
+    
+    try {
+        const data = await apiGet(url);
+        renderStatistics(data);
+        renderTrendChart(data.monthlyTrend || []);
+        
+        const summary = data.summary || {};
+        document.getElementById('statSummary').innerHTML = `
+            <strong>📊 Tổng hợp:</strong> 
+            ${summary.totalEmployees || 0} nhân viên có nghỉ phép | 
+            Tổng số đơn: ${summary.totalLeaveRequests || 0} | 
+            Tổng số ngày nghỉ: ${summary.totalLeaveDays || 0}
+        `;
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red">Lỗi: ${err.message}</tr>`;
+    }
+}
+
+// Render bảng thống kê
+function renderStatistics(data) {
+    const tbody = document.getElementById('statTableBody');
+    const employees = data.employees || [];
+    
+    if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Không có dữ liệu</tr>';
+        return;
+    }
+    
+    tbody.innerHTML = employees.map((emp, idx) => {
+        const reasonsList = (emp.reasons || []).map(r => `${r.reason}: ${r.count} lần`).join(', ');
+        return `
+            <tr>
+                <td>${idx + 1}</td>
+                <td><strong>${emp.username}</strong></td>
+                <td>${emp.totalTimes} lần</td>
+                <td>${emp.totalDays} ngày</td>
+                <td><span class="badge badge-blue">${emp.mainReason || 'Khác'}</span></td>
+                <td style="font-size: 12px;">${reasonsList || '—'}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Vẽ biểu đồ xu hướng
+function renderTrendChart(monthlyData) {
+    const chartDiv = document.getElementById('chartBars');
+    if (!monthlyData || monthlyData.length === 0) {
+        chartDiv.innerHTML = '<div style="text-align:center; color:var(--text-muted)">Chưa có dữ liệu biểu đồ</div>';
+        return;
+    }
+    
+    const maxCount = Math.max(...monthlyData.map(m => m.count), 1);
+    const monthNames = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+    
+    // Tạo mảng đủ 12 tháng
+    const fullData = Array(12).fill(0);
+    monthlyData.forEach(m => { fullData[m.month - 1] = m.count; });
+    
+    chartDiv.innerHTML = fullData.map((count, i) => `
+        <div style="flex:1; text-align:center;">
+            <div style="height: ${(count / maxCount) * 150}px; background: var(--primary); border-radius: 6px 6px 0 0; width: 100%; min-height: 4px;"></div>
+            <div style="font-size: 11px; margin-top: 6px;">${monthNames[i]}</div>
+            <div style="font-size: 10px; color: var(--text-muted);">${count}</div>
+        </div>
+    `).join('');
+}
+
+// Export Excel thống kê
+async function exportStatisticsExcel() {
+    const year = document.getElementById('statYear').value;
+    const statType = document.getElementById('statType').value;
+   let url = `/api/attendance/performance-analysis/export?year=${year}`; 
+    if (statType === 'month') {
+        url += `&month=${document.getElementById('statMonth').value}`;
+    } else {
+        url += `&quarter=${document.getElementById('statQuarter').value}`;
+    }
+    
+    try {
+        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${getToken()}` } });
+        if (!response.ok) throw new Error('Export thất bại');
+        const blob = await response.blob();
+        downloadFile(blob, `leave_statistics_${year}.xlsx`);
+        showToast('Xuất Excel thành công!', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// Khởi tạo load thống kê mặc định
+setTimeout(() => loadStatistics(), 500);
             </script>
 </body>
 

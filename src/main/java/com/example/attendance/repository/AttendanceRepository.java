@@ -39,4 +39,19 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     @Query("SELECT a FROM Attendance a WHERE a.checkInTime BETWEEN :start AND :end AND a.checkOutTime IS NULL")
     List<Attendance> findCheckedInNotCheckout(LocalDateTime start, LocalDateTime end);
+
+    // Thống kê số lần đi trễ, về sớm theo nhân viên trong khoảng thời gian
+@Query("SELECT a.user.id, a.user.username, " +
+       "SUM(CASE WHEN a.status = 'LATE' THEN 1 ELSE 0 END) as lateCount, " +
+       "SUM(CASE WHEN a.checkoutStatus = 'EARLY' THEN 1 ELSE 0 END) as earlyCount, " +
+       "COUNT(a) as totalWorkingDays, " +
+       "COALESCE(SUM(a.totalHours), 0) as totalHours " +
+       "FROM Attendance a " +
+       "WHERE YEAR(a.checkInTime) = :year " +
+       "AND (:quarter IS NULL OR QUARTER(a.checkInTime) = :quarter) " +
+       "AND (:month IS NULL OR MONTH(a.checkInTime) = :month) " +
+       "GROUP BY a.user.id, a.user.username")
+List<Object[]> getEmployeePerformance(@Param("year") int year,
+                                       @Param("quarter") Integer quarter,
+                                       @Param("month") Integer month);
 }
