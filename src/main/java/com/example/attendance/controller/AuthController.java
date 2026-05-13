@@ -64,8 +64,6 @@ public ResponseEntity<?> getCurrentUser(Authentication authentication) {
 }
 
 
-
-
 @GetMapping("/performance-analysis")
 public ResponseEntity<?> getEmployeePerformance(
         @RequestParam int year,

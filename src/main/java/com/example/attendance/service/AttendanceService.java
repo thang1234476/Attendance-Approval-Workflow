@@ -269,10 +269,6 @@ public class AttendanceService {
         }
         return result;
     }
-
-
-
-
     // Phân tích thái độ và năng suất nhân viên
 public List<EmployeePerformanceDto> analyzeEmployeePerformance(int year, Integer quarter, Integer month) {
     List<Object[]> perfData = repository.getEmployeePerformance(year, quarter, month);
@@ -419,35 +415,5 @@ public byte[] exportPerformanceToExcel(int year, Integer quarter, Integer month)
     
     return outputStream.toByteArray();
 }
-// Phân tích thái độ & năng suất (lấy dữ liệu JSON)
-@GetMapping("/performance-analysis")
-public ResponseEntity<?> getEmployeePerformance(
-        @RequestParam int year,
-        @RequestParam(required = false) Integer quarter,
-        @RequestParam(required = false) Integer month) {
-    try {
-        List<EmployeePerformanceDto> results = service.analyzeEmployeePerformance(year, quarter, month);
-        return ResponseEntity.ok(results);
-    } catch (Exception e) {
-        return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
-    }
-}
 
-// Export Excel phân tích thái độ & năng suất
-@GetMapping("/performance-analysis/export")
-public ResponseEntity<byte[]> exportPerformanceAnalysis(
-        @RequestParam int year,
-        @RequestParam(required = false) Integer quarter,
-        @RequestParam(required = false) Integer month) {
-    try {
-        byte[] excel = service.exportPerformanceToExcel(year, quarter, month);
-        return ResponseEntity.ok()
-                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                .header("Content-Disposition", "attachment; filename=performance_analysis_" + year + ".xlsx")
-                .body(excel);
-    } catch (Exception e) {
-        e.printStackTrace();
-        return ResponseEntity.internalServerError().build();
-    }
-}
 }
