@@ -1,27 +1,39 @@
 package com.example.attendance.service;
 
 import com.example.attendance.dto.AttendanceSummary;
+import com.example.attendance.dto.EmployeePerformanceDto;
 import com.example.attendance.entity.Attendance;
 import com.example.attendance.entity.AttendanceStatus;
 import com.example.attendance.entity.User;
 import com.example.attendance.repository.AttendanceRepository;
 import com.example.attendance.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
+
 import com.example.attendance.entity.CheckoutStatus;
+
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import java.io.ByteArrayOutputStream;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.example.attendance.repository.LeaveRequestRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +42,7 @@ public class AttendanceService {
     private final AttendanceRepository repository;
     private final UserRepository userRepository;
     private final SystemConfigService configService;
+    private final LeaveRequestRepository leaveRequestRepository;
 
     public Attendance checkIn(Long userId) {
         User user = userRepository.findById(userId)
@@ -256,4 +269,185 @@ public class AttendanceService {
         }
         return result;
     }
+
+
+
+
+    // Phân tích thái độ và năng suất nhân viên
+public List<EmployeePerformanceDto> analyzeEmployeePerformance(int year, Integer quarter, Integer month) {
+    List<Object[]> perfData = repository.getEmployeePerformance(year, quarter, month);
+    List<Object[]> leaveData = leaveRequestRepository.getLeaveStatsByEmployee(year, quarter, month);
+    
+    // Chuyển đổi dữ liệu nghỉ phép thành Map
+    Map<Long, Object[]> leaveMap = new HashMap<>();
+    for (Object[] row : leaveData) {
+        leaveMap.put((Long) row[0], row);
+    }
+    
+    List<EmployeePerformanceDto> results = new ArrayList<>();
+    
+    for (Object[] row : perfData) {
+        Long userId = (Long) row[0];
+        String username = (String) row[1];
+        long lateCount = (Long) row[2];
+        long earlyCount = (Long) row[3];
+        long totalWorkingDays = (Long) row[4];
+        double totalHours = (Double) row[5];
+        
+        Object[] leaveRow = leaveMap.getOrDefault(userId, new Object[]{userId, username, 0L, 0L, 0L});
+        long totalLeave = (Long) leaveRow[2];
+        long rejectedLeave = (Long) leaveRow[3];
+        long suddenLeave = (Long) leaveRow[4];
+        
+        // Tính tỷ lệ
+        double latenessRate = totalWorkingDays > 0 ? (double) lateCount / totalWorkingDays * 100 : 0;
+        double earlyLeaveRate = totalWorkingDays > 0 ? (double) earlyCount / totalWorkingDays * 100 : 0;
+        double leaveRate = totalWorkingDays > 0 ? (double) totalLeave / totalWorkingDays * 100 : 0;
+        double rejectionRate = totalLeave > 0 ? (double) rejectedLeave / totalLeave * 100 : 0;
+        
+        // Đánh giá thái độ
+        String attitudeScore;
+        if (latenessRate <= 5 && earlyLeaveRate <= 5 && rejectionRate <= 10) {
+            attitudeScore = "🟢 Tốt";
+        } else if (latenessRate <= 15 && earlyLeaveRate <= 15 && rejectionRate <= 25) {
+            attitudeScore = "🟡 Khá";
+        } else if (latenessRate <= 30 && earlyLeaveRate <= 30) {
+            attitudeScore = "🟠 Trung bình";
+        } else {
+            attitudeScore = "🔴 Kém";
+        }
+        
+        // Đánh giá năng suất (dựa trên tổng giờ làm so với chuẩn 8h/ngày)
+        double standardHours = totalWorkingDays * 8;
+        double productivity = standardHours > 0 ? (totalHours / standardHours) * 100 : 0;
+        String productivityScore;
+        if (productivity >= 95) {
+            productivityScore = "🟢 Xuất sắc";
+        } else if (productivity >= 85) {
+            productivityScore = "🟡 Tốt";
+        } else if (productivity >= 70) {
+            productivityScore = "🟠 Trung bình";
+        } else {
+            productivityScore = "🔴 Yếu";
+        }
+        
+        // Đánh giá tổng quan
+        String overallRating;
+        String recommendation;
+        if (latenessRate <= 5 && earlyLeaveRate <= 5 && productivity >= 90) {
+            overallRating = "🌟 Nhân viên xuất sắc";
+            recommendation = "Cân nhắc khen thưởng, tạo động lực";
+        } else if (latenessRate > 30 || earlyLeaveRate > 30 || productivity < 60) {
+            overallRating = "⚠️ Cần cải thiện ngay";
+            recommendation = "Họp trao đổi, cảnh cáo, theo dõi sát sao";
+        } else if (latenessRate > 15 || earlyLeaveRate > 15 || productivity < 75) {
+            overallRating = "📌 Cần cải thiện";
+            recommendation = "Nhắc nhở, đào tạo thêm kỹ năng";
+        } else {
+            overallRating = "✅ Đạt yêu cầu";
+            recommendation = "Duy trì và phát huy";
+        }
+        
+        EmployeePerformanceDto dto = EmployeePerformanceDto.builder()
+                .userId(userId).username(username)
+                .lateCount(lateCount).earlyCount(earlyCount)
+                .totalWorkingDays(totalWorkingDays).totalHours(totalHours)
+                .totalLeave(totalLeave).rejectedLeave(rejectedLeave).suddenLeave(suddenLeave)
+                .latenessRate(Math.round(latenessRate * 100) / 100.0)
+                .earlyLeaveRate(Math.round(earlyLeaveRate * 100) / 100.0)
+                .leaveRate(Math.round(leaveRate * 100) / 100.0)
+                .rejectionRate(Math.round(rejectionRate * 100) / 100.0)
+                .attitudeScore(attitudeScore).productivityScore(productivityScore)
+                .overallRating(overallRating).recommendation(recommendation)
+                .build();
+        
+        results.add(dto);
+    }
+    
+    // Sắp xếp theo điểm thái độ (Tốt → Kém)
+    results.sort((a, b) -> {
+        String order = "🟢 Tốt,🟡 Khá,🟠 Trung bình,🔴 Kém";
+        return order.indexOf(a.getAttitudeScore()) - order.indexOf(b.getAttitudeScore());
+    });
+    
+    return results;
+}
+// Export Excel phân tích thái độ & năng suất
+public byte[] exportPerformanceToExcel(int year, Integer quarter, Integer month) throws Exception {
+    List<EmployeePerformanceDto> data = analyzeEmployeePerformance(year, quarter, month);
+    
+    org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+    org.apache.poi.ss.usermodel.Sheet sheet = workbook.createSheet("Phan_tich_thai_do_" + year);
+    
+    // Header: 9 cột
+    String[] headers = {"STT", "Nhân Viên", "Đi trễ (lần/%)", "Về sớm (lần/%)", "Số lần nghỉ", "Thái độ", "Năng suất", "Đánh giá", "Khuyến nghị"};
+    org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
+    org.apache.poi.ss.usermodel.CellStyle headerStyle = workbook.createCellStyle();
+    org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
+    headerFont.setBold(true);
+    headerStyle.setFont(headerFont);
+    
+    for (int i = 0; i < headers.length; i++) {
+        org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
+        cell.setCellValue(headers[i]);
+        cell.setCellStyle(headerStyle);
+    }
+    
+    // Đổ dữ liệu
+    int rowNum = 1;
+    int stt = 1;
+    for (EmployeePerformanceDto emp : data) {
+        org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowNum++);
+        row.createCell(0).setCellValue(stt++);
+        row.createCell(1).setCellValue(emp.getUsername());
+        row.createCell(2).setCellValue(emp.getLateCount() + " lần (" + emp.getLatenessRate() + "%)");
+        row.createCell(3).setCellValue(emp.getEarlyCount() + " lần (" + emp.getEarlyLeaveRate() + "%)");
+        row.createCell(4).setCellValue(emp.getTotalLeave() + " lần (" + emp.getLeaveRate() + "%)");
+        row.createCell(5).setCellValue(emp.getAttitudeScore());
+        row.createCell(6).setCellValue(emp.getProductivityScore());
+        row.createCell(7).setCellValue(emp.getOverallRating());
+        row.createCell(8).setCellValue(emp.getRecommendation());
+    }
+    
+    for (int i = 0; i < headers.length; i++) {
+        sheet.autoSizeColumn(i);
+    }
+    
+    java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+    workbook.write(outputStream);
+    workbook.close();
+    
+    return outputStream.toByteArray();
+}
+// Phân tích thái độ & năng suất (lấy dữ liệu JSON)
+@GetMapping("/performance-analysis")
+public ResponseEntity<?> getEmployeePerformance(
+        @RequestParam int year,
+        @RequestParam(required = false) Integer quarter,
+        @RequestParam(required = false) Integer month) {
+    try {
+        List<EmployeePerformanceDto> results = service.analyzeEmployeePerformance(year, quarter, month);
+        return ResponseEntity.ok(results);
+    } catch (Exception e) {
+        return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+    }
+}
+
+// Export Excel phân tích thái độ & năng suất
+@GetMapping("/performance-analysis/export")
+public ResponseEntity<byte[]> exportPerformanceAnalysis(
+        @RequestParam int year,
+        @RequestParam(required = false) Integer quarter,
+        @RequestParam(required = false) Integer month) {
+    try {
+        byte[] excel = service.exportPerformanceToExcel(year, quarter, month);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .header("Content-Disposition", "attachment; filename=performance_analysis_" + year + ".xlsx")
+                .body(excel);
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.internalServerError().build();
+    }
+}
 }

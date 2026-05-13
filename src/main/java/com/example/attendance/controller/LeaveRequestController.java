@@ -53,4 +53,36 @@ public ResponseEntity<List<LeaveRequest>> getLeaves(
         String reason = (String) payload.get("rejectReason");
         return ResponseEntity.ok(service.approveRequest(id, auth.getName(), approved, reason));
     }
+
+
+
+
+    @GetMapping("/statistics")
+public ResponseEntity<?> getLeaveStatistics(
+        @RequestParam int year,
+        @RequestParam(required = false) Integer quarter,
+        @RequestParam(required = false) Integer month) {
+    try {
+        Map<String, Object> stats = service.getLeaveStatistics(year, quarter, month);
+        return ResponseEntity.ok(stats);
+    } catch (Exception e) {
+        return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+    }
+}
+@GetMapping("/statistics/export")
+public ResponseEntity<byte[]> exportStatistics(
+        @RequestParam int year,
+        @RequestParam(required = false) Integer quarter,
+        @RequestParam(required = false) Integer month) {
+    try {
+        byte[] excel = service.exportStatisticsToExcel(year, quarter, month);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .header("Content-Disposition", "attachment; filename=leave_statistics_" + year + ".xlsx")
+                .body(excel);
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.internalServerError().build();
+    }
+}
 }

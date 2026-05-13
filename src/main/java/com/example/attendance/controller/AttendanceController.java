@@ -2,6 +2,7 @@ package com.example.attendance.controller;
 
 import com.example.attendance.dto.AttendancePageResponse;
 import com.example.attendance.dto.AttendanceSummary;
+import com.example.attendance.dto.EmployeePerformanceDto;
 import com.example.attendance.entity.Attendance;
 import com.example.attendance.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
@@ -87,4 +88,33 @@ public class AttendanceController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/performance-analysis")
+public ResponseEntity<?> getEmployeePerformance(
+        @RequestParam int year,
+        @RequestParam(required = false) Integer quarter,
+        @RequestParam(required = false) Integer month) {
+    try {
+        List<EmployeePerformanceDto> results = service.analyzeEmployeePerformance(year, quarter, month);
+        return ResponseEntity.ok(results);
+    } catch (Exception e) {
+        return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+    }
+}
+@GetMapping("/performance-analysis/export")
+public ResponseEntity<byte[]> exportPerformanceAnalysis(
+        @RequestParam int year,
+        @RequestParam(required = false) Integer quarter,
+        @RequestParam(required = false) Integer month) {
+    try {
+        byte[] excel = service.exportPerformanceToExcel(year, quarter, month);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .header("Content-Disposition", "attachment; filename=performance_analysis_" + year + ".xlsx")
+                .body(excel);
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.internalServerError().build();
+    }
+}
 }
