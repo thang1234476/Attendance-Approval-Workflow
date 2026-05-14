@@ -460,17 +460,6 @@
                 }
 
                 loadLeaveData();
-
-
-
-
-
-
-
-
-
-
-
                 // Hiển thị/ẩn select tháng/quý
 document.getElementById('statType').addEventListener('change', function() {
     const isMonth = this.value === 'month';
@@ -560,7 +549,6 @@ function renderTrendChart(monthlyData) {
         </div>
     `).join('');
 }
-
 // Export Excel thống kê
 async function exportStatisticsExcel() {
     const year = document.getElementById('statYear').value;
@@ -571,7 +559,6 @@ async function exportStatisticsExcel() {
     } else {
         url += `&quarter=${document.getElementById('statQuarter').value}`;
     }
-    
     try {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${getToken()}` } });
         if (!response.ok) throw new Error('Export thất bại');
@@ -582,7 +569,6 @@ async function exportStatisticsExcel() {
         showToast(err.message, 'error');
     }
 }
-
 // Khởi tạo load thống kê mặc định
 setTimeout(() => loadStatistics(), 500);
             </script>
