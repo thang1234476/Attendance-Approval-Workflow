@@ -62,8 +62,6 @@ public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         "email", user.getEmail()
     ));
 }
-
-
 @GetMapping("/performance-analysis")
 public ResponseEntity<?> getEmployeePerformance(
         @RequestParam int year,
@@ -76,7 +74,6 @@ public ResponseEntity<?> getEmployeePerformance(
         return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
     }
 }
-
 @GetMapping("/performance-analysis/export")
 public ResponseEntity<byte[]> exportPerformanceAnalysis(
         @RequestParam int year,
