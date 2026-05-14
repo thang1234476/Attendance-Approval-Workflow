@@ -2,7 +2,6 @@ package com.example.attendance.controller;
 
 import com.example.attendance.dto.AuthRequest;
 import com.example.attendance.dto.AuthResponse;
-import com.example.attendance.dto.EmployeePerformanceDto;
 import com.example.attendance.dto.RegisterRequest;
 import com.example.attendance.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
@@ -61,32 +60,5 @@ public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         "role", user.getRole(),
         "email", user.getEmail()
     ));
-}
-@GetMapping("/performance-analysis")
-public ResponseEntity<?> getEmployeePerformance(
-        @RequestParam int year,
-        @RequestParam(required = false) Integer quarter,
-        @RequestParam(required = false) Integer month) {
-    try {
-        List<EmployeePerformanceDto> results = service.analyzeEmployeePerformance(year, quarter, month);
-        return ResponseEntity.ok(results);
-    } catch (Exception e) {
-        return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
-    }
-}
-@GetMapping("/performance-analysis/export")
-public ResponseEntity<byte[]> exportPerformanceAnalysis(
-        @RequestParam int year,
-        @RequestParam(required = false) Integer quarter,
-        @RequestParam(required = false) Integer month) {
-    try {
-        byte[] excel = service.exportPerformanceToExcel(year, quarter, month);
-        return ResponseEntity.ok()
-                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                .header("Content-Disposition", "attachment; filename=performance_analysis_" + year + ".xlsx")
-                .body(excel);
-    } catch (Exception e) {
-        return ResponseEntity.internalServerError().build();
-    }
 }
 }
