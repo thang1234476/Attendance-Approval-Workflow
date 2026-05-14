@@ -141,7 +141,6 @@ public class AttendanceService {
     public List<Attendance> getCheckedInNotCheckoutToday(LocalDateTime start, LocalDateTime end) {
         return repository.findCheckedInNotCheckout(start, end);
     }
-
     // Checkout
     public Attendance checkout(Long userId) {
         User user = userRepository.findById(userId)
