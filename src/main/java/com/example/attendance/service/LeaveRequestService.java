@@ -13,10 +13,9 @@ import java.io.ByteArrayOutputStream;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.util.Comparator;
 
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import java.util.*;
@@ -177,43 +176,6 @@ public Map<String, Object> getLeaveStatistics(int year, Integer quarter, Integer
         "totalLeaveDays", employeeList.stream().mapToLong(e -> (Long) e.get("totalDays")).sum()
     ));
     return result;
-}
-public byte[] exportStatisticsToExcel(int year, Integer quarter, Integer month) throws Exception {
-    Map<String, Object> stats = getLeaveStatistics(year, quarter, month);
-    List<Map<String, Object>> employees = (List<Map<String, Object>>) stats.get("employees");
-    
-    Workbook workbook = new XSSFWorkbook();
-    Sheet sheet = workbook.createSheet("Thong_ke_nghi_phep_" + year);
-    
-    // Header
-    String[] headers = {"STT", "Nhân Viên", "Số lần nghỉ", "Tổng ngày nghỉ", "Lý do chính", "Chi tiết lý do"};
-    Row headerRow = sheet.createRow(0);
-    for (int i = 0; i < headers.length; i++) {
-        headerRow.createCell(i).setCellValue(headers[i]);
-    }
-    
-    // Data
-    int rowNum = 1;
-    for (int i = 0; i < employees.size(); i++) {
-        Map<String, Object> emp = employees.get(i);
-        Row row = sheet.createRow(rowNum++);
-        row.createCell(0).setCellValue(i + 1);
-        row.createCell(1).setCellValue((String) emp.get("username"));
-        row.createCell(2).setCellValue((Long) emp.get("totalTimes"));
-        row.createCell(3).setCellValue((Long) emp.get("totalDays"));
-        row.createCell(4).setCellValue((String) emp.get("mainReason"));
-        
-        List<Map<String, Object>> reasons = (List<Map<String, Object>>) emp.get("reasons");
-        String reasonDetail = reasons.stream().map(r -> r.get("reason") + "(" + r.get("count") + ")").collect(Collectors.joining(", "));
-        row.createCell(5).setCellValue(reasonDetail);
-    }
-    
-    for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
-    
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    workbook.write(out);
-    workbook.close();
-    return out.toByteArray();
 }
 // Export Excel thống kê nghỉ phép
 public byte[] exportStatisticsToExcel(int year, Integer quarter, Integer month) throws Exception {

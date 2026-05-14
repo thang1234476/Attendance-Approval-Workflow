@@ -553,7 +553,8 @@ function renderTrendChart(monthlyData) {
 async function exportStatisticsExcel() {
     const year = document.getElementById('statYear').value;
     const statType = document.getElementById('statType').value;
-   let url = `/api/attendance/performance-analysis/export?year=${year}`; 
+//    let url = `/api/attendance/performance-analysis/export?year=${year}`; 
+    let url = `/api/leave/statistics/export?year=${year}`;
     if (statType === 'month') {
         url += `&month=${document.getElementById('statMonth').value}`;
     } else {
