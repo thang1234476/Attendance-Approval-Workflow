@@ -38,12 +38,10 @@ public ResponseEntity<List<LeaveRequest>> getLeaves(
     // Gọi hàm searchRequests mới tạo ở Bước 1
     return ResponseEntity.ok(service.searchRequests(name, date)); 
 }
-
     @GetMapping("/all")
     public ResponseEntity<List<LeaveRequest>> getAllRequests() {
         return ResponseEntity.ok(service.getAllRequests());
     }
-
     @PutMapping("/{id}/status")
     public ResponseEntity<LeaveRequest> updateStatus(
             @PathVariable Long id,
@@ -53,10 +51,6 @@ public ResponseEntity<List<LeaveRequest>> getLeaves(
         String reason = (String) payload.get("rejectReason");
         return ResponseEntity.ok(service.approveRequest(id, auth.getName(), approved, reason));
     }
-
-
-
-
     @GetMapping("/statistics")
 public ResponseEntity<?> getLeaveStatistics(
         @RequestParam int year,

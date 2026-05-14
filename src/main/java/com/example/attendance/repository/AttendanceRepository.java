@@ -19,7 +19,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("userId") Long userId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
-
     // Lỗi fix: dùng tham số enum thay vì chuỗi string để so sánh trong JPQL
     @Query("SELECT COUNT(a) FROM Attendance a WHERE a.status = :status AND a.checkInTime BETWEEN :start AND :end")
     long countByStatusAndCheckInTimeBetween(
@@ -39,7 +38,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     @Query("SELECT a FROM Attendance a WHERE a.checkInTime BETWEEN :start AND :end AND a.checkOutTime IS NULL")
     List<Attendance> findCheckedInNotCheckout(LocalDateTime start, LocalDateTime end);
-
     // Thống kê số lần đi trễ, về sớm theo nhân viên trong khoảng thời gian
 @Query("SELECT a.user.id, a.user.username, " +
        "SUM(CASE WHEN a.status = 'LATE' THEN 1 ELSE 0 END) as lateCount, " +
