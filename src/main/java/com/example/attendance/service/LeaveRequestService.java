@@ -107,7 +107,6 @@ public class LeaveRequestService {
 
         return repository.save(request);
     }
-
 //     * Lấy thống kê nghỉ phép theo tháng/quý
 //  */
 public Map<String, Object> getLeaveStatistics(int year, Integer quarter, Integer month) {
@@ -170,7 +169,6 @@ public Map<String, Object> getLeaveStatistics(int year, Integer quarter, Integer
         monthData.put("count", row[1]);
         monthlyData.add(monthData);
     }
-    
     result.put("employees", employeeList);
     result.put("monthlyTrend", monthlyData);
     result.put("summary", Map.of(
@@ -178,7 +176,6 @@ public Map<String, Object> getLeaveStatistics(int year, Integer quarter, Integer
         "totalLeaveRequests", employeeList.stream().mapToLong(e -> (Long) e.get("totalTimes")).sum(),
         "totalLeaveDays", employeeList.stream().mapToLong(e -> (Long) e.get("totalDays")).sum()
     ));
-    
     return result;
 }
 public byte[] exportStatisticsToExcel(int year, Integer quarter, Integer month) throws Exception {
@@ -239,7 +236,6 @@ public byte[] exportStatisticsToExcel(int year, Integer quarter, Integer month) 
         cell.setCellValue(headers[i]);
         cell.setCellStyle(headerStyle);
     }
-    
     // Đổ dữ liệu
     int rowNum = 1;
     int stt = 1;
