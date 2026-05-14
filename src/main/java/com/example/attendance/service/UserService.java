@@ -4,8 +4,11 @@ import com.example.attendance.dto.RegisterRequest;
 import com.example.attendance.entity.User;
 import com.example.attendance.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 
 import java.util.List;
 
@@ -42,6 +45,10 @@ public class UserService {
 
         return userRepository.save(user);
     }
+    public User findByUsername(String username) {
+    return userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+}
 
     public User updateUser(Long id, User updatedUser) {
         User user = userRepository.findById(id)
