@@ -20,11 +20,6 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
            "(:date IS NULL OR (l.startDate <= :date AND l.endDate >= :date))")
     List<LeaveRequest> searchLeaves(@Param("name") String name, @Param("date") LocalDate date);
 
-
-
-
-    // Thêm vào cuối interface, trước dấu }
-
 // Thống kê số lần nghỉ theo nhân viên và lý do trong khoảng thời gian
 @Query("SELECT l.user.username as username, l.reason as reason, COUNT(l) as total " +
        "FROM LeaveRequest l WHERE l.status = 'APPROVED' " +
@@ -52,9 +47,6 @@ List<Object[]> countTotalLeaveDaysByUser(@Param("year") int year,
        "FROM LeaveRequest l WHERE l.status = 'APPROVED' AND YEAR(l.startDate) = :year " +
        "GROUP BY MONTH(l.startDate) ORDER BY month")
 List<Object[]> countLeaveByMonth(@Param("year") int year);
-
-
-
 
 // Thống kê số lần nghỉ và lý do theo nhân viên
 @Query("SELECT l.user.id, l.user.username, " +
