@@ -421,7 +421,7 @@
                 }
 
                 async function sendApprovedToN8n(requestId, employeeName) {
-                    const webhookUrl = 'https://n8n.thangnguyen.id.vn/webhook/accept-leave';
+                    const webhookUrl = 'https://n8n.thangnguyen.id.vn/webhook-test/accept-leave';
                     try {
                         await fetch(webhookUrl, {
                             method: 'POST',
@@ -440,7 +440,7 @@
                 }
 
                 async function sendRejectToN8n(requestId, employeeName, rejectReason) {
-                    const webhookUrl = 'https://n8n.thangnguyen.id.vn/webhook/accept-leave';
+                    const webhookUrl = 'https://n8n.thangnguyen.id.vn/webhook-test/accept-leave';
                     try {
                         await fetch(webhookUrl, {
                             method: 'POST',
